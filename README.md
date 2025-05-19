@@ -1,4 +1,4 @@
-# Perplexity MCP Zerver <a href="https://raw.githubusercontent.com/wysh3/perplexity-mcp-zerver/main/README.md" title="Copy Full README Content (opens raw file view)">📋</a>
+# Perplexity MCP Zerver <a href="https://raw.githubusercontent.com/sm-moshi/perplexity-mcp-zerver/main/README.md" title="Copy Full README Content (opens raw file view)">📋</a>
 
 A research level Model Context Protocol (MCP) server implementation providing AI-powered research capabilities by interacting with the Perplexity website without requiring an API key.
 
@@ -31,21 +31,21 @@ Extracts main article text content from URLs using browser automation and Mozill
 Maintains ongoing conversations with Perplexity AI. Stores chat history locally in `chat_history.db` within the project directory. Returns a *stringified JSON object* containing `chat_id` and `response`.
 
 ## Installation
-> just copy <a href="https://raw.githubusercontent.com/wysh3/perplexity-mcp-zerver/main/README.md" title="Copy Full README Content (opens raw file view)">📋</a> and paste the readme and let the AI take care of the rest
+> just copy <a href="https://raw.githubusercontent.com/sm-moshi/perplexity-mcp-zerver/main/README.md" title="Copy Full README Content (opens raw file view)">📋</a> and paste the readme and let the AI take care of the rest
 1. Clone or download this repository:
 ```bash
-git clone https://github.com/wysh3/perplexity-mcp-zerver.git
+git clone https://github.com/sm-moshi/perplexity-mcp-zerver.git
 cd perplexity-mcp-zerver
 ```
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build the server:
 ```bash
-npm run build
+pnpm build
 ```
 
 > **Important**: Ensure you have Node.js installed. Puppeteer will download a compatible browser version if needed during installation. Restart your IDE/Application after building and configuring the project for changes to take effect.
@@ -106,6 +106,9 @@ Example for Claude Desktop:
 
 Thanks DaInfernalCoder:
 - [DaInfernalCoder/perplexity-researcher-mcp](https://github.com/DaInfernalCoder/perplexity-researcher-mcp)
+-
+Thanks to wysh3 for the initial implementation:
+- [wysh3/perplexity-mcp-zerver](https://github.com/wysh3/perplexity-mcp-zerver)
 
 
 ## License

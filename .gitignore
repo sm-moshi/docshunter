@@ -21,3 +21,9 @@ chat_history.db
 
 # Lock file (User requested)
 package-lock.json
+pnpm-lock.yaml
+
+# Dev Environment
+.repomix/
+memory-bank/*.md
+.cursorignore
