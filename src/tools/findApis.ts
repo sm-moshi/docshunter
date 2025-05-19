@@ -1,14 +1,12 @@
 // src/tools/findApis.ts
-import { z } from "zod";
+import { ToolSchemas } from "../types/ToolSchemas";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export function registerTool(mcp: McpServer) {
   mcp.tool(
     "find_apis",
     "Extract API method calls or imports from code",
-    {
-      code: z.string().min(5),
-    },
+    ToolSchemas.find_apis,
     async ({ code }) => {
       return {
         content: [
