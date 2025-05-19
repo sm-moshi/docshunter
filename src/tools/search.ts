@@ -10,9 +10,13 @@ export function registerTool(mcp: McpServer) {
       query: z.string().min(2),
     },
     async ({ query }) => {
-      // Placeholder logic, real one uses puppeteerClient + Perplexity scraping
       return {
-        content: [{ type: "text", text: `You searched for: ${query}` }],
+        content: [
+          {
+            type: "text",
+            text: `You searched for: ${query} (this tool will eventually return real Perplexity results)`,
+          },
+        ],
       };
     }
   );
