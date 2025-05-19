@@ -27,3 +27,5 @@ pnpm-lock.yaml
 .repomix/
 memory-bank/*.md
 .cursorignore
+.nx/cache
+.nx/workspace-data
