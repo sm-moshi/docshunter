@@ -1,14 +1,12 @@
 // src/tools/search.ts
-import { z } from "zod";
+import { ToolSchemas } from "../types/ToolSchemas";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 export function registerTool(mcp: McpServer) {
   mcp.tool(
     "search",
     "Perform a web search via Perplexity",
-    {
-      query: z.string().min(2),
-    },
+    ToolSchemas.search,
     async ({ query }) => {
       return {
         content: [
