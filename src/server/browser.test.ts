@@ -102,20 +102,20 @@ describe('BrowserManager', () => {
   });
 
   it('should throw error if page is not initialized for title()', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.title()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if browser is not initialized for newPage()', async () => {
-    // @ts-expect-error
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.browser = null;
     await expect(manager.newPage()).rejects.toThrow('Browser not initialized');
   });
 
   it('should set and get isClosed()', () => {
     expect(manager.isClosed()).toBe(false);
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     expect(manager.isClosed()).toBe(true);
   });
@@ -208,9 +208,9 @@ describe('BrowserManager', () => {
     // Simulate all selectors failing
     mockPage.waitForSelector.mockRejectedValue(new Error('not found'));
     mockPage.screenshot.mockResolvedValue('screenshot');
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
-    const result = await manager.waitForSearchInput(90000);
+    const result = await manager.waitForSearchInput();
     expect(result).toBeNull();
     expect(mockPage.screenshot).toHaveBeenCalled();
   });
@@ -239,56 +239,56 @@ describe('BrowserManager', () => {
   it('should handle initializeBrowser reentrancy', async () => {
     // @ts-expect-error [test override: allow private assignment]
     manager.isInitializing = true;
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { void 0; });
     await manager.initializeBrowser();
     expect(logSpy).toHaveBeenCalledWith('Browser initialization already in progress...');
     logSpy.mockRestore();
   });
 
   it('should throw error if goto called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.goto('https://test')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if evaluate called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.evaluate(() => 1)).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if click called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.click('.btn')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if type called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.type('.input', 'abc')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if waitForSelector called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.waitForSelector('.sel')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if reload called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.reload()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if screenshot called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.screenshot()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if keyboard called with no page', () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     expect(() => manager.keyboard).toThrow('Page not initialized');
   });

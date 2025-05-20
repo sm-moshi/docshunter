@@ -33,7 +33,7 @@ export async function handleExtractUrlContent(
         return JSON.stringify(
           {
             status: "Success",
-            title: article.title || pageTitle,
+            title: article.title ?? pageTitle,
             textContent: article.textContent.trim(),
             excerpt: article.excerpt,
             siteName: article.siteName,
@@ -115,7 +115,7 @@ export async function handleExtractUrlContent(
             .map((link) => {
               const href = link.getAttribute("href");
               const text =
-                (link as HTMLElement).innerText || link.textContent || "";
+                (link as HTMLElement).innerText ?? link.textContent ?? "";
               if (
                 !href ||
                 href.startsWith("#") ||

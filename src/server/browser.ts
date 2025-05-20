@@ -133,9 +133,7 @@ export class BrowserManager {
     return this.page.type(selector, text, options);
   }
 
-  public async waitForSearchInput(
-    _timeout = CONFIG.SELECTOR_TIMEOUT,
-  ): Promise<string | null> {
+  public async waitForSearchInput(): Promise<string | null> {
     if (!this.page) return null;
     const possibleSelectors = [
       'textarea[placeholder*="Ask"]',
@@ -166,7 +164,7 @@ export class BrowserManager {
             return selector;
           }
         }
-      } catch (error) {
+      } catch {
         console.warn(`Selector '${selector}' not found or not interactive`);
       }
     }
@@ -271,7 +269,7 @@ export class BrowserManager {
           return (
             document
               .querySelector("main")
-              ?.textContent?.includes("internal error") || false
+              ?.textContent?.includes("internal error") ?? false
           );
         });
         if (isInternalError) {
@@ -364,7 +362,7 @@ export class BrowserManager {
         languages: { get: () => ["en-US", "en"] },
         permissions: {
           get: () => ({
-            query: async () => ({ state: "prompt" }),
+            query: () => ({ state: "prompt" }),
           }),
         },
       });
@@ -382,6 +380,10 @@ export class BrowserManager {
               RUNNING: "running",
             },
             isInstalled: false,
+            getDetails: () => { /* intentionally empty */ },
+            getIsInstalled: () => { /* intentionally empty */ },
+            installState: () => { /* intentionally empty */ },
+            runningState: () => { /* intentionally empty */ },
           },
           runtime: {
             OnInstalledReason: {
@@ -419,7 +421,12 @@ export class BrowserManager {
               UPDATE_AVAILABLE: "update_available",
             },
             connect: () => ({
-              onMessage: {},
+              onMessage: {
+                addListener: () => { /* intentionally empty */ },
+                removeListener: () => { /* intentionally empty */ },
+              },
+              postMessage: () => { /* intentionally empty */ },
+              disconnect: () => { /* intentionally empty */ },
             }),
           },
         };

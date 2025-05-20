@@ -4,7 +4,6 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "build",
-    "rootDir": "src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -14,6 +13,7 @@
   "include": [
     "src",
     "src/**/*.test.ts",
-    "src/**/*.spec.ts"
+    "src/**/*.spec.ts",
+    "vitest.config.ts"
   ]
 }

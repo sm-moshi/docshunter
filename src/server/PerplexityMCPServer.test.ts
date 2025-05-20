@@ -12,8 +12,21 @@ vi.mock('./toolHandlers/checkDeprecatedCode', () => ({ handleCheckDeprecatedCode
 import { describe, expect, it, vi } from 'vitest';
 import { PerplexityMCPServer } from './PerplexityMCPServer';
 
-// Helper to call the tool handler via the real server
-async function callTool(server: PerplexityMCPServer, name: string, args: unknown = {}) {
+ 
+type ToolName = "chat_perplexity" | "search" | "extract_url_content" | "find_apis" | "get_documentation" | "check_deprecated_code";
+interface ToolArgs {
+  message?: string;
+  chat_id?: string;
+  query?: string;
+  detail_level?: "brief" | "normal" | "detailed";
+  url?: string;
+  depth?: number;
+  requirement?: string;
+  context?: string;
+  code?: string;
+  technology?: string;
+}
+async function callTool(server: PerplexityMCPServer, name: ToolName, args: ToolArgs = {}) {
   return await server._testCallTool(name, args);
 }
 
@@ -65,7 +78,8 @@ describe('PerplexityMCPServer', () => {
 
   it('should return error for unknown tool', async () => {
     const server = new PerplexityMCPServer();
-    await expect(callTool(server, 'unknown_tool', {})).rejects.toThrow('Unknown tool');
+    // @ts-expect-error: intentionally passing an invalid tool name to test error handling
+    await expect(callTool(server, 'unknown_tool', {} as ToolArgs)).rejects.toThrow('Unknown tool');
   });
 
   // Error propagation test can be added by mocking the handler to throw

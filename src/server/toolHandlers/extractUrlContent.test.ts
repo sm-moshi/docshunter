@@ -11,7 +11,7 @@ describe('handleExtractUrlContent', () => {
 
   it('should extract content from a valid URL (mocked)', async () => {
     const result = await handleExtractUrlContent({ url: 'https://example.com' }, mockPage as unknown as BrowserManager);
-    const parsed: Record<string, unknown> = JSON.parse(result);
+    const parsed = JSON.parse(result) as { status: string; title: string; textContent: string };
     expect(parsed.status).toBe('Success');
     expect(parsed.title).toBe('Test Page');
     expect(typeof parsed.textContent === 'string' && parsed.textContent.includes('main content')).toBe(true);
@@ -24,7 +24,7 @@ describe('handleExtractUrlContent', () => {
       content: vi.fn().mockRejectedValue(new Error('No content')),
     };
     const result = await handleExtractUrlContent({ url: 'https://fail.com' }, errorBrowserManager as BrowserManager);
-    const parsed: Record<string, unknown> = JSON.parse(result);
+    const parsed = JSON.parse(result) as { status: string; message: string };
     expect(parsed.status).toBe('Error');
     expect(typeof parsed.message === 'string' && parsed.message.includes('Failed to extract content')).toBe(true);
   });
