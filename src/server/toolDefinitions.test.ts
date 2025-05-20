@@ -31,3 +31,13 @@ describe('TOOL_DEFINITIONS', () => {
     }
   });
 });
+
+describe('Tool Definitions', () => {
+  it('should have all required tool definitions', () => {
+    // TODO: ...test code...
+  });
+
+  it('should validate tool schemas', () => {
+    // TODO: ...test code...
+  });
+});

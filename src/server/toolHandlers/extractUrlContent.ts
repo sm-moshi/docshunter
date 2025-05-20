@@ -28,7 +28,7 @@ export async function handleExtractUrlContent(
       const article = reader.parse();
       if (
         article?.textContent &&
-        article.textContent.trim().length > (article.title?.length || 0)
+        article.textContent.trim().length > (article.title?.length ?? 0)
       ) {
         return JSON.stringify(
           {
@@ -44,12 +44,12 @@ export async function handleExtractUrlContent(
         );
       }
       // Fallback: just get body text
-      const bodyText = dom.window.document.body?.textContent?.trim() || null;
+      const bodyText = dom.window.document.body?.textContent?.trim() ?? null;
       return JSON.stringify(
         {
           status: "SuccessWithFallback",
           title: pageTitle,
-          textContent: bodyText,
+          textContent: bodyText ?? null,
           excerpt: null,
           siteName: null,
           byline: null,
@@ -102,15 +102,15 @@ export async function handleExtractUrlContent(
         const reader = new Readability(dom.window.document);
         const article = reader.parse();
         pageResult.textContent =
-          article?.textContent?.trim() ||
-          dom.window.document.body?.textContent?.trim() ||
+          article?.textContent?.trim() ??
+          dom.window.document.body?.textContent?.trim() ??
           null;
         if (pageResult.textContent && pageResult.textContent.length > 20000) {
           pageResult.textContent = `${pageResult.textContent.substring(0, 20000)}... (truncated)`;
         }
         // Extract same-domain links (simple)
         const baseHostname = new URL(startUrl).hostname;
-        const links = (await browserManager.evaluate((base: string) => {
+        const links = (await browserManager.evaluate(() => {
           return Array.from(document.querySelectorAll("a[href]"))
             .map((link) => {
               const href = link.getAttribute("href");
@@ -130,17 +130,19 @@ export async function handleExtractUrlContent(
             .filter(Boolean);
         }, startUrl));
         const resolvedLinks: { url: string; text: string }[] = [];
-        for (const link of links) {
-          if (!link) continue;
-          try {
-            const absoluteUrl = new URL(link.url, startUrl).href;
-            if (new URL(absoluteUrl).hostname === baseHostname) {
-              resolvedLinks.push({
-                url: absoluteUrl,
-                text: link.text || absoluteUrl,
-              });
-            }
-          } catch (e) {}
+        if (Array.isArray(links)) {
+          for (const link of links) {
+            if (!link) continue;
+            try {
+              const absoluteUrl = new URL((link as { url: string }).url, startUrl).href;
+              if (new URL(absoluteUrl).hostname === baseHostname) {
+                resolvedLinks.push({
+                  url: absoluteUrl,
+                  text: (link as { text?: string }).text ?? absoluteUrl,
+                });
+              }
+            } catch { /* ignore */ }
+          }
         }
         linksToExplore = resolvedLinks
           .sort((a, b) => b.text.length - a.text.length)

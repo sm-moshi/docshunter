@@ -3,7 +3,7 @@ import { handleGetDocumentation } from './getDocumentation';
 
 describe('handleGetDocumentation', () => {
   it('should return documentation for a valid query (mocked)', async () => {
-    const mockPerformSearch = async (query: string) => `Docs for: ${query}`;
+    const mockPerformSearch = async (query: string) => await Promise.resolve(`Docs for: ${query}`);
     const result = await handleGetDocumentation({ query: 'React hooks' }, mockPerformSearch);
     expect(result).toContain('Docs for:');
     expect(result).toContain('React hooks');
@@ -14,8 +14,12 @@ describe('handleGetDocumentation', () => {
     try {
       await handleGetDocumentation({ query: 'React hooks' }, errorPerformSearch);
       throw new Error('Should have thrown');
-    } catch (err: any) {
-      expect(err.message).toBe('Search failed');
+    } catch (err) {
+      if (err instanceof Error) {
+        expect(err.message).toBe('Search failed');
+      } else {
+        throw err;
+      }
     }
   });
 });

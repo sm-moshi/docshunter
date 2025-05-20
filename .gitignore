@@ -20,8 +20,11 @@ logs/
 chat_history.db
 
 # Lock file (User requested)
-package-lock.json
+# package-lock.json
 pnpm-lock.yaml
 
 # Local Dev
 memory-bank/*.md
+
+# Coverage
+coverage/lcov-report/

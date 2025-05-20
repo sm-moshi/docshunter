@@ -3,7 +3,7 @@ import { handleCheckDeprecatedCode } from './checkDeprecatedCode';
 
 describe('handleCheckDeprecatedCode', () => {
   it('should detect deprecated code (mocked)', async () => {
-    const mockPerformSearch = async (query: string) => `Checked: ${query}`;
+    const mockPerformSearch = (query: string) => Promise.resolve(`Checked: ${query}`);
     const result = await handleCheckDeprecatedCode({ code: 'var x = 1;' }, mockPerformSearch);
     expect(result).toContain('Checked:');
     expect(result).toContain('var x = 1;');
@@ -11,10 +11,10 @@ describe('handleCheckDeprecatedCode', () => {
 
   it('should handle errors gracefully (fallback prompt)', async () => {
     let callCount = 0;
-    const errorPerformSearch = async (query: string) => {
+    const errorPerformSearch = (query: string) => {
       callCount++;
-      if (callCount === 1) throw new Error('Search failed');
-      return `Fallback: ${query}`;
+      if (callCount === 1) return Promise.reject(new Error('Search failed'));
+      return Promise.resolve('Fallback');
     };
     const result = await handleCheckDeprecatedCode({ code: 'var y = 2;' }, errorPerformSearch);
     expect(result).toContain('Fallback:');

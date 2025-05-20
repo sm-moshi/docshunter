@@ -42,44 +42,48 @@ export class PerplexityMCPServer {
     // The 'any' type is used here due to the dynamic nature of MCP tool requests
     this.server.setRequestHandler(
       CallToolRequestSchema,
-      async (request: any) => {
-        const toolName = request.params.name;
+      async (request: unknown) => {
+        // Type guard for request
+        const req = request as { params: { name: string; arguments: unknown } };
+        const toolName = req.params.name;
         try {
           let result: string;
           switch (toolName) {
             case "chat_perplexity":
               result = await handleChatPerplexity(
-                request.params.arguments,
+                req.params.arguments as { message: string; chat_id?: string },
                 this.db,
                 this.browserManager,
                 this.performSearch.bind(this),
               );
               break;
             case "search":
-              result = await handleSearch(request.params.arguments, (query) =>
-                this.performSearch(query),
+              result = await handleSearch(
+                req.params.arguments as { query: string; detail_level?: "brief" | "normal" | "detailed" },
+                (query) => this.performSearch(query),
               );
               break;
             case "extract_url_content":
               result = await handleExtractUrlContent(
-                request.params.arguments,
+                req.params.arguments as { url: string; depth?: number },
                 this.browserManager,
               );
               break;
             case "find_apis":
-              result = await handleFindApis(request.params.arguments, (query) =>
-                this.performSearch(query),
+              result = await handleFindApis(
+                req.params.arguments as { requirement: string; context?: string },
+                (query) => this.performSearch(query),
               );
               break;
             case "get_documentation":
               result = await handleGetDocumentation(
-                request.params.arguments,
+                req.params.arguments as { query: string; context?: string },
                 (query) => this.performSearch(query),
               );
               break;
             case "check_deprecated_code":
               result = await handleCheckDeprecatedCode(
-                request.params.arguments,
+                req.params.arguments as { code: string; technology?: string },
                 (query) => this.performSearch(query),
               );
               break;
@@ -130,7 +134,9 @@ export class PerplexityMCPServer {
       // Clear and type the query
       await this.browserManager.evaluate((sel: string) => {
         const input = document.querySelector(sel)!;
-        if (input) input.value = "";
+        if (input && (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) {
+          input.value = "";
+        }
       }, selector);
       await this.browserManager.click(selector, { clickCount: 3 });
       await this.browserManager.keyboard.press("Backspace");
@@ -181,6 +187,29 @@ export class PerplexityMCPServer {
         "Error during shutdown:",
         err instanceof Error ? err.message : String(err),
       );
+    }
+  }
+
+  /**
+   * Test-only method to invoke tool handlers by name.
+   * This is not for production use.
+   */
+  public async _testCallTool(name: string, args: any) {
+    switch (name) {
+      case "chat_perplexity":
+        return await handleChatPerplexity(args, this.db, this.browserManager, this.performSearch.bind(this));
+      case "search":
+        return await handleSearch(args, (query) => this.performSearch(query));
+      case "extract_url_content":
+        return await handleExtractUrlContent(args, this.browserManager);
+      case "find_apis":
+        return await handleFindApis(args, (query) => this.performSearch(query));
+      case "get_documentation":
+        return await handleGetDocumentation(args, (query) => this.performSearch(query));
+      case "check_deprecated_code":
+        return await handleCheckDeprecatedCode(args, (query) => this.performSearch(query));
+      default:
+        throw new Error("Unknown tool: " + name);
     }
   }
 }

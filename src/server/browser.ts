@@ -17,8 +17,8 @@ export class BrowserManager {
 
   // --- Exposed Methods/Properties ---
   public async close() {
-    if (this.page && !this.page.isClosed()) await this.page.close();
-    if (this.browser && this.browser.isConnected()) await this.browser.close();
+    if (this.page?.isClosed()) await this.page.close();
+    if (this.browser?.isConnected()) await this.browser.close();
     this.page = null;
     this.browser = null;
   }
@@ -46,11 +46,11 @@ export class BrowserManager {
   }
 
   public async evaluate<T>(
-    pageFunction: Function | string,
-    ...args: any[]
+    pageFunction: (...args: unknown[]) => T | Promise<T> | string,
+    ...args: unknown[]
   ): Promise<T> {
     if (!this.page) throw new Error("Page not initialized");
-    // @ts-ignore
+    // @ts-expect-error: page.evaluate may require any type for args
     return this.page.evaluate(pageFunction, ...args);
   }
 
@@ -69,11 +69,10 @@ export class BrowserManager {
   }
 
   public async evaluateOnNewDocument(
-    pageFunction: Function | string,
-    ...args: any[]
+    pageFunction: (...args: unknown[]) => unknown,
+    ...args: unknown[]
   ) {
     if (!this.page) throw new Error("Page not initialized");
-    // @ts-ignore
     return this.page.evaluateOnNewDocument(pageFunction, ...args);
   }
 
@@ -135,7 +134,7 @@ export class BrowserManager {
   }
 
   public async waitForSearchInput(
-    timeout = CONFIG.SELECTOR_TIMEOUT,
+    _timeout = CONFIG.SELECTOR_TIMEOUT,
   ): Promise<string | null> {
     if (!this.page) return null;
     const possibleSelectors = [
@@ -251,9 +250,9 @@ export class BrowserManager {
       await this.page.setUserAgent(CONFIG.USER_AGENT);
       this.page.setDefaultNavigationTimeout(CONFIG.PAGE_TIMEOUT);
       await this.navigateToPerplexity();
-    } catch (error) {
-      console.error("Browser initialization failed:", error);
-      throw error;
+    } catch (e) {
+      console.error("Browser initialization failed:", e);
+      throw e;
     } finally {
       this.isInitializing = false;
     }
@@ -332,13 +331,13 @@ export class BrowserManager {
         );
       }
       console.log(`Page loaded: ${pageUrl} (${pageTitle})`);
-      if (pageUrl !== "N/A" && !pageUrl.includes("perplexity.ai")) {
+      if (pageUrl !== "N/A" && !(pageUrl ?? "").includes("perplexity.ai")) {
         console.error(`Unexpected URL: ${pageUrl}`);
         throw new Error(`Navigation redirected to unexpected URL: ${pageUrl}`);
       }
       console.log("Navigation and readiness check completed successfully");
-    } catch (error) {
-      console.error("Navigation failed:", error);
+    } catch (e) {
+      console.error("Navigation failed:", e);
       try {
         if (this.page) {
           await this.page.screenshot({
@@ -350,7 +349,7 @@ export class BrowserManager {
       } catch (screenshotError) {
         console.error("Failed to capture screenshot:", screenshotError);
       }
-      throw error;
+      throw e;
     }
   }
 
@@ -382,11 +381,7 @@ export class BrowserManager {
               READY_TO_RUN: "ready_to_run",
               RUNNING: "running",
             },
-            getDetails: () => {},
-            getIsInstalled: () => {},
-            installState: () => {},
             isInstalled: false,
-            runningState: () => {},
           },
           runtime: {
             OnInstalledReason: {
@@ -424,12 +419,7 @@ export class BrowserManager {
               UPDATE_AVAILABLE: "update_available",
             },
             connect: () => ({
-              postMessage: () => {},
-              onMessage: {
-                addListener: () => {},
-                removeListener: () => {},
-              },
-              disconnect: () => {},
+              onMessage: {},
             }),
           },
         };
