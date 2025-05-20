@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "build",
@@ -8,7 +8,12 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM"]
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
+  ]
 }
