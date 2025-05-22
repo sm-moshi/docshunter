@@ -103,7 +103,7 @@ describe('PerplexityMCPServer Integration (orchestration & error propagation)', 
 
   it('should handle a full chat → search → extract workflow', async () => {
     // Mock performSearch to return predictable results
-    server['performSearch'] = vi.fn().mockResolvedValue('Echo: Hello');
+    server.performSearch = vi.fn().mockResolvedValue('Echo: Hello');
     const chatResult = await server._testCallTool('chat_perplexity', { message: 'Hello' });
     expect(chatResult).toContain('Hello');
 
@@ -122,11 +122,11 @@ describe('PerplexityMCPServer Integration (orchestration & error propagation)', 
 
   it('should propagate browser errors', async () => {
     // Restore only performSearch mock if it was mocked
-    if (server['performSearch'] && 'mockRestore' in server['performSearch']) {
-      (server['performSearch'] as any).mockRestore();
+    if (server.performSearch && 'mockRestore' in server.performSearch) {
+      (server.performSearch as any).mockRestore();
     }
     // Mock browserManager to throw
-    server['browserManager'].initializeBrowser = vi.fn().mockRejectedValue(new Error('Browser init failed'));
+    server.browserManager.initializeBrowser = vi.fn().mockRejectedValue(new Error('Browser init failed'));
     const result = await server._testCallTool('search', { query: 'fail' });
     console.log('DEBUG: result of _testCallTool in browser error test:', result);
     // Accept either the expected error string or an empty string for diagnostic purposes
@@ -138,11 +138,11 @@ describe('PerplexityMCPServer Integration (orchestration & error propagation)', 
 
   it('should propagate database errors', async () => {
     // Restore only performSearch mock if it was mocked
-    if (server['performSearch'] && 'mockRestore' in server['performSearch']) {
-      (server['performSearch'] as any).mockRestore();
+    if (server.performSearch && 'mockRestore' in server.performSearch) {
+      (server.performSearch as any).mockRestore();
     }
     // Mock db to throw
-    server['db'].getChatHistory = vi.fn().mockImplementation(() => { throw new Error('DB error'); });
+    server.db.getChatHistory = vi.fn().mockImplementation(() => { throw new Error('DB error'); });
     let error: unknown;
     try {
       await server._testCallTool('chat_perplexity', { message: 'test' });
