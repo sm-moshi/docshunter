@@ -14,7 +14,8 @@ export default [
       '*.db',
       '*.log',
       '.DS_Store',
-    ],
+      '*.test.ts'
+    ]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
