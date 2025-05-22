@@ -5,11 +5,39 @@
 
 version: 2
 updates:
+  # For npm (pnpm is fully supported by dependabot since 2023)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    # Group dev and prod dependencies to reduce PR spam
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+      prod-dependencies:
+        dependency-type: "production"
     open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore(deps)"
-    rebase-strategy: "auto"
+    # Add helpful labels
+    labels:
+      - "dependencies"
+      - "automated"
+    # Assign reviewer(s) if desired (remove or change as appropriate)
+    reviewers:
+      - "sm-moshi"
+    # Enable security updates
+    allow:
+      - dependency-type: "all"
+    security-updates: true
+
+  # For GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "actions"
+      - "automated"
+    reviewers:
+      - "sm-moshi"
+    security-updates: true
