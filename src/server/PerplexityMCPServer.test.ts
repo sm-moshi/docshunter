@@ -12,8 +12,21 @@ vi.mock('./toolHandlers/checkDeprecatedCode', () => ({ handleCheckDeprecatedCode
 import { describe, expect, it, vi } from 'vitest';
 import { PerplexityMCPServer } from './PerplexityMCPServer';
 
-// Helper to call the tool handler via the real server
-async function callTool(server: PerplexityMCPServer, name: string, args: unknown = {}) {
+
+type ToolName = "chat_perplexity" | "search" | "extract_url_content" | "find_apis" | "get_documentation" | "check_deprecated_code";
+interface ToolArgs {
+  message?: string;
+  chat_id?: string;
+  query?: string;
+  detail_level?: "brief" | "normal" | "detailed";
+  url?: string;
+  depth?: number;
+  requirement?: string;
+  context?: string;
+  code?: string;
+  technology?: string;
+}
+async function callTool(server: PerplexityMCPServer, name: ToolName, args: ToolArgs = {}) {
   return await server._testCallTool(name, args);
 }
 
@@ -65,8 +78,79 @@ describe('PerplexityMCPServer', () => {
 
   it('should return error for unknown tool', async () => {
     const server = new PerplexityMCPServer();
-    await expect(callTool(server, 'unknown_tool', {})).rejects.toThrow('Unknown tool');
+    // @ts-expect-error: intentionally passing an invalid tool name to test error handling
+    await expect(callTool(server, 'unknown_tool', {} as ToolArgs)).rejects.toThrow('Unknown tool');
   });
 
   // Error propagation test can be added by mocking the handler to throw
+});
+
+describe('PerplexityMCPServer error and edge cases', () => {
+  it('should handle performSearch when browserManager.isClosed() returns true and initializeBrowser throws', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].isClosed = vi.fn().mockReturnValue(true);
+    server['browserManager'].initializeBrowser = vi.fn().mockRejectedValue(new Error('init fail'));
+    const result = await server['performSearch']('test');
+    expect(result).toContain('Search failed: init fail');
+  });
+
+  it('should handle performSearch when waitForSearchInput returns null', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].isClosed = vi.fn().mockReturnValue(false);
+    server['browserManager'].initializeBrowser = vi.fn();
+    server['browserManager'].navigateToPerplexity = vi.fn();
+    server['browserManager'].waitForSearchInput = vi.fn().mockResolvedValue(null);
+    const result = await server['performSearch']('test');
+    expect(result).toContain('Search failed: Search input not found');
+  });
+
+  it('should handle performSearch when browserManager.evaluate throws during answer extraction', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].isClosed = vi.fn().mockReturnValue(false);
+    server['browserManager'].initializeBrowser = vi.fn();
+    server['browserManager'].navigateToPerplexity = vi.fn();
+    server['browserManager'].waitForSearchInput = vi.fn().mockResolvedValue('.input');
+    server['browserManager'].evaluate = vi.fn()
+      .mockResolvedValueOnce(undefined) // clear input
+      .mockResolvedValueOnce(undefined) // click
+      .mockResolvedValueOnce(undefined) // press
+      .mockResolvedValueOnce(undefined) // type
+      .mockResolvedValueOnce(undefined) // press
+      .mockRejectedValueOnce(new Error('eval fail'));
+    server['browserManager'].click = vi.fn();
+    Object.defineProperty(server['browserManager'], 'keyboard', { get: () => ({ press: vi.fn() }) });
+    server['browserManager'].type = vi.fn();
+    server['browserManager'].waitForSelector = vi.fn();
+    const result = await server['performSearch']('test');
+    expect(['', 'Search failed: eval fail']).toContain(result);
+  });
+
+  it('should handle run() error if initializeBrowser throws', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].initializeBrowser = vi.fn().mockRejectedValue(new Error('init fail'));
+    await expect(server.run()).rejects.toThrow('init fail');
+  });
+
+  it('should handle run() error if server.connect throws', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].initializeBrowser = vi.fn();
+    server['server'].connect = vi.fn().mockRejectedValue(new Error('connect fail'));
+    await expect(server.run()).rejects.toThrow('connect fail');
+  });
+
+  it('should handle close() error if browserManager.close throws', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].close = vi.fn().mockRejectedValue(new Error('close fail'));
+    server['db'].close = vi.fn();
+    server['server'].close = vi.fn();
+    await server.close(); // Should not throw
+  });
+
+  it('should handle close() error if db.close throws', async () => {
+    const server = new PerplexityMCPServer();
+    server['browserManager'].close = vi.fn();
+    server['db'].close = vi.fn().mockImplementation(() => { throw new Error('db close fail'); });
+    server['server'].close = vi.fn();
+    await server.close(); // Should not throw
+  });
 });

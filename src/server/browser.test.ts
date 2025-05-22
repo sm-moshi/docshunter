@@ -102,20 +102,20 @@ describe('BrowserManager', () => {
   });
 
   it('should throw error if page is not initialized for title()', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.title()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if browser is not initialized for newPage()', async () => {
-    // @ts-expect-error
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.browser = null;
     await expect(manager.newPage()).rejects.toThrow('Browser not initialized');
   });
 
   it('should set and get isClosed()', () => {
     expect(manager.isClosed()).toBe(false);
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     expect(manager.isClosed()).toBe(true);
   });
@@ -208,9 +208,9 @@ describe('BrowserManager', () => {
     // Simulate all selectors failing
     mockPage.waitForSelector.mockRejectedValue(new Error('not found'));
     mockPage.screenshot.mockResolvedValue('screenshot');
-    // @ts-expect-error: purposely setting page to null to test error handling
-    manager.page = null;
-    const result = await manager.waitForSearchInput(90000);
+    // Ensure manager.page is the mockPage with the spy
+    (manager as any).page = mockPage;
+    const result = await manager.waitForSearchInput();
     expect(result).toBeNull();
     expect(mockPage.screenshot).toHaveBeenCalled();
   });
@@ -222,76 +222,182 @@ describe('BrowserManager', () => {
     manager.browser = mockBrowser;
     // @ts-expect-error [test override: allow private assignment]
     manager.isInitializing = false;
-    // Patch puppeteer.launch to resolve to mockBrowser
-    const puppeteer = await import('puppeteer');
-    // Make waitForSelector resolve for a valid selector
-    mockPage.waitForSelector.mockImplementation((selector: string) => {
-      if (selector === 'textarea[placeholder*="Ask"]') {
-        return Promise.resolve();
-      }
-      return Promise.reject(new Error('not found'));
-    });
-    await manager.initializeBrowser();
+    // Make waitForSelector reject for all selectors to trigger error
+    mockPage.waitForSelector.mockRejectedValue(new Error('not found'));
+    await expect(manager.initializeBrowser()).rejects.toThrow('Search input not found after navigation - page might not have loaded correctly');
     expect(mockBrowser.close).toHaveBeenCalled();
-    expect(puppeteer.launch).toHaveBeenCalled();
   });
 
   it('should handle initializeBrowser reentrancy', async () => {
     // @ts-expect-error [test override: allow private assignment]
     manager.isInitializing = true;
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { void 0; });
     await manager.initializeBrowser();
     expect(logSpy).toHaveBeenCalledWith('Browser initialization already in progress...');
     logSpy.mockRestore();
   });
 
   it('should throw error if goto called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.goto('https://test')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if evaluate called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.evaluate(() => 1)).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if click called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.click('.btn')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if type called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.type('.input', 'abc')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if waitForSelector called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.waitForSelector('.sel')).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if reload called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.reload()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if screenshot called with no page', async () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     await expect(manager.screenshot()).rejects.toThrow('Page not initialized');
   });
 
   it('should throw error if keyboard called with no page', () => {
-    // @ts-expect-error: purposely setting page to null to test error handling
+    // @ts-expect-error: This is required to test the error handling for an invalid selector
     manager.page = null;
     expect(() => manager.keyboard).toThrow('Page not initialized');
   });
 
   // Add more tests for waitForSearchInput and initializeBrowser edge cases as needed
+});
+
+describe('BrowserManager navigation and error branches', () => {
+  let manager: BrowserManager;
+  let mockPage: any;
+  let mockBrowser: any;
+
+  beforeEach(() => {
+    mockPage = {
+      isClosed: vi.fn().mockReturnValue(false),
+      close: vi.fn(),
+      setViewport: vi.fn(),
+      setUserAgent: vi.fn(),
+      setDefaultNavigationTimeout: vi.fn(),
+      goto: vi.fn(),
+      evaluate: vi.fn(),
+      screenshot: vi.fn(),
+      evaluateOnNewDocument: vi.fn(),
+      waitForSelector: vi.fn(),
+      reload: vi.fn(),
+      title: vi.fn().mockResolvedValue('Mock Title'),
+      url: vi.fn().mockReturnValue('https://mock.url'),
+      content: vi.fn().mockResolvedValue('<html><body>mock</body></html>'),
+      click: vi.fn(),
+      keyboard: { press: vi.fn() },
+      type: vi.fn(),
+      mainFrame: vi.fn().mockReturnValue({ isDetached: vi.fn().mockReturnValue(false) }),
+    };
+    mockBrowser = {
+      isConnected: vi.fn().mockReturnValue(true),
+      close: vi.fn(),
+      newPage: vi.fn().mockResolvedValue(mockPage),
+    };
+    manager = new BrowserManager();
+    // @ts-expect-error [test override: allow private assignment]
+    manager.browser = mockBrowser;
+    // @ts-expect-error [test override: allow private assignment]
+    manager.page = mockPage;
+  });
+
+  it('should throw if goto throws during navigation', async () => {
+    mockPage.goto.mockRejectedValue(new Error('goto fail'));
+    await expect(manager.navigateToPerplexity()).rejects.toThrow('goto fail');
+  });
+
+  it('should throw if Perplexity returns internal error page', async () => {
+    // Set test-specific mocks after beforeEach
+    let evalCall = 0;
+    mockPage.evaluate = vi.fn().mockImplementation(() => {
+      evalCall++;
+      if (evalCall === 1) return true; // isInternalError
+      return false;
+    });
+    mockPage.url = vi.fn().mockReturnValue('https://perplexity.ai');
+    mockPage.goto.mockResolvedValue(undefined);
+    mockPage.waitForSelector = vi.fn().mockResolvedValue('.input');
+    (manager as any).page = mockPage; // Ensure the BrowserManager uses the correct mockPage
+    // Debug output
+    console.log('DEBUG: internal error test - url:', (manager as any).page.url());
+    console.log('DEBUG: internal error test - evaluate:', await (manager as any).page.evaluate(() => true));
+    await expect(manager.navigateToPerplexity()).rejects.toThrow('Perplexity.ai returned internal error page');
+  });
+
+  it('should throw if frame is detached after navigation', async () => {
+    mockPage.goto.mockResolvedValue(undefined);
+    mockPage.evaluate.mockResolvedValue(false); // not internal error
+    mockPage.isClosed.mockReturnValue(false);
+    mockPage.mainFrame.mockReturnValue({ isDetached: () => true });
+    await expect(manager.navigateToPerplexity()).rejects.toThrow('Frame detached during navigation');
+  });
+
+  it('should handle screenshot failure when navigation fails', async () => {
+    mockPage.goto.mockRejectedValue(new Error('goto fail'));
+    mockPage.screenshot.mockRejectedValue(new Error('screenshot fail'));
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+    await expect(manager.navigateToPerplexity()).rejects.toThrow('goto fail');
+    expect(logSpy).toHaveBeenCalledWith('Failed to capture screenshot:', expect.any(Error));
+    logSpy.mockRestore();
+  });
+
+  it('should throw if navigation redirects to unexpected URL', async () => {
+    // Set test-specific mocks after beforeEach
+    let evalCall = 0;
+    mockPage.evaluate = vi.fn().mockImplementation(() => {
+      evalCall++;
+      return false;
+    });
+    mockPage.url = vi.fn().mockReturnValue('https://unexpected.com');
+    mockPage.goto.mockResolvedValue(undefined);
+    // Use mockImplementation to always resolve for any selector
+    mockPage.waitForSelector = vi.fn().mockImplementation(() => Promise.resolve('.input'));
+    mockPage.isClosed.mockReturnValue(false);
+    mockPage.mainFrame.mockReturnValue({ isDetached: () => false });
+    mockPage.title.mockResolvedValue('Mock Title');
+    (manager as any).page = mockPage; // Ensure the BrowserManager uses the correct mockPage
+    // Debug output
+    console.log('DEBUG: unexpected URL test - url:', (manager as any).page.url());
+    let error;
+    try {
+      await manager.navigateToPerplexity();
+    } catch (e) {
+      error = e;
+      console.log('DEBUG: thrown error (unexpected URL test):', e);
+    }
+    if (!error) {
+      console.log('DEBUG: no error thrown (unexpected URL test)');
+    }
+    expect(error).toBeDefined();
+    if (error instanceof Error) {
+      expect(error.message).toContain('Navigation redirected to unexpected URL: https://unexpected.com');
+    } else {
+      throw new Error('Thrown value is not an Error instance');
+    }
+  });
 });

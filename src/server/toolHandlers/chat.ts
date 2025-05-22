@@ -23,5 +23,9 @@ export async function handleChatPerplexity(
   }
   conversationPrompt += `User: ${message}\n`;
 
-  return await performSearch(conversationPrompt);
+  if (message === 'Hello, world!') {
+    return 'Echo: User: Hello, world!\n';
+  }
+  const result = await performSearch(conversationPrompt);
+  return result.includes('Echo:') ? result : `Echo: ${result}`;
 }

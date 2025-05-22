@@ -11,7 +11,7 @@ describe('handleCheckDeprecatedCode', () => {
 
   it('should handle errors gracefully (fallback prompt)', async () => {
     let callCount = 0;
-    const errorPerformSearch = (query: string) => {
+    const errorPerformSearch = () => {
       callCount++;
       if (callCount === 1) return Promise.reject(new Error('Search failed'));
       return Promise.resolve('Fallback');

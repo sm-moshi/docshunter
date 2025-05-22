@@ -17,8 +17,12 @@ export class BrowserManager {
 
   // --- Exposed Methods/Properties ---
   public async close() {
-    if (this.page?.isClosed()) await this.page.close();
-    if (this.browser?.isConnected()) await this.browser.close();
+    if (this.page && typeof this.page.isClosed === 'function' && !this.page.isClosed()) {
+      await this.page.close();
+    }
+    if (this.browser && typeof this.browser.isConnected === 'function' && this.browser.isConnected()) {
+      await this.browser.close();
+    }
     this.page = null;
     this.browser = null;
   }
@@ -133,9 +137,7 @@ export class BrowserManager {
     return this.page.type(selector, text, options);
   }
 
-  public async waitForSearchInput(
-    _timeout = CONFIG.SELECTOR_TIMEOUT,
-  ): Promise<string | null> {
+  public async waitForSearchInput(): Promise<string | null> {
     if (!this.page) return null;
     const possibleSelectors = [
       'textarea[placeholder*="Ask"]',
@@ -166,15 +168,17 @@ export class BrowserManager {
             return selector;
           }
         }
-      } catch (error) {
+      } catch {
         console.warn(`Selector '${selector}' not found or not interactive`);
       }
     }
     // Take a screenshot for debugging if none is found
-    await this.page.screenshot({
-      path: "debug_search_not_found.png",
-      fullPage: true,
-    });
+    if (this.page) {
+      await this.page.screenshot({
+        path: "debug_search_not_found.png",
+        fullPage: true,
+      });
+    }
     console.error("No working search input found");
     return null;
   }
@@ -271,7 +275,7 @@ export class BrowserManager {
           return (
             document
               .querySelector("main")
-              ?.textContent?.includes("internal error") || false
+              ?.textContent?.includes("internal error") ?? false
           );
         });
         if (isInternalError) {
@@ -290,6 +294,9 @@ export class BrowserManager {
           "Navigation issue detected:",
           gotoError instanceof Error ? gotoError.message : String(gotoError),
         );
+        if (gotoError instanceof Error && gotoError.message.includes("internal error")) {
+          throw gotoError;
+        }
       }
       if (this.page.isClosed() || this.page.mainFrame().isDetached()) {
         console.error(
@@ -364,7 +371,7 @@ export class BrowserManager {
         languages: { get: () => ["en-US", "en"] },
         permissions: {
           get: () => ({
-            query: async () => ({ state: "prompt" }),
+            query: () => ({ state: "prompt" }),
           }),
         },
       });
@@ -382,6 +389,10 @@ export class BrowserManager {
               RUNNING: "running",
             },
             isInstalled: false,
+            getDetails: () => { /* intentionally empty */ },
+            getIsInstalled: () => { /* intentionally empty */ },
+            installState: () => { /* intentionally empty */ },
+            runningState: () => { /* intentionally empty */ },
           },
           runtime: {
             OnInstalledReason: {
@@ -419,7 +430,12 @@ export class BrowserManager {
               UPDATE_AVAILABLE: "update_available",
             },
             connect: () => ({
-              onMessage: {},
+              onMessage: {
+                addListener: () => { /* intentionally empty */ },
+                removeListener: () => { /* intentionally empty */ },
+              },
+              postMessage: () => { /* intentionally empty */ },
+              disconnect: () => { /* intentionally empty */ },
             }),
           },
         };

@@ -10,7 +10,7 @@ describe('handleFindApis', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    const errorPerformSearch = (query: string) => Promise.reject(new Error('Search failed'));
+    const errorPerformSearch = () => Promise.reject(new Error('Search failed'));
     try {
       await handleFindApis({ requirement: 'weather data' }, errorPerformSearch);
       throw new Error('Should have thrown');

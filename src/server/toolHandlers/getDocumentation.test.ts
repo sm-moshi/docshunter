@@ -10,7 +10,10 @@ describe('handleGetDocumentation', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    const errorPerformSearch = async () => { throw new Error('Search failed'); };
+    const errorPerformSearch = async () => {
+      await Promise.resolve(); // Dummy await to satisfy linter
+      throw new Error("fail");
+    };
     try {
       await handleGetDocumentation({ query: 'React hooks' }, errorPerformSearch);
       throw new Error('Should have thrown');
