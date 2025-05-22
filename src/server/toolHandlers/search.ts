@@ -18,7 +18,7 @@ export async function handleSearch(
   }
   try {
     return await performSearch(prompt);
-  } catch {
-    throw new Error('Search failed');
+  } catch (error: any) {
+    throw new Error(`Search failed: ${error.message}`);
   }
 }
