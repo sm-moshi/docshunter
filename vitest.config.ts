@@ -6,7 +6,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
-      exclude: ['**/test/**', '**/*.test.ts', '**/build/**'],
+      exclude: ['**/test/**', '**/*.test.ts', '**/build/**', "**/build/src/**", "**/build/server/**"],
     },
+    exclude: [
+      'build/**', // Exclude all build output
+      'node_modules/**',
+      'dist/**',
+      '.git/**',
+    ],
   },
 });

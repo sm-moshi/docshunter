@@ -17,8 +17,12 @@ export class BrowserManager {
 
   // --- Exposed Methods/Properties ---
   public async close() {
-    if (this.page?.isClosed()) await this.page.close();
-    if (this.browser?.isConnected()) await this.browser.close();
+    if (this.page && typeof this.page.isClosed === 'function' && !this.page.isClosed()) {
+      await this.page.close();
+    }
+    if (this.browser && typeof this.browser.isConnected === 'function' && this.browser.isConnected()) {
+      await this.browser.close();
+    }
     this.page = null;
     this.browser = null;
   }
@@ -169,10 +173,12 @@ export class BrowserManager {
       }
     }
     // Take a screenshot for debugging if none is found
-    await this.page.screenshot({
-      path: "debug_search_not_found.png",
-      fullPage: true,
-    });
+    if (this.page) {
+      await this.page.screenshot({
+        path: "debug_search_not_found.png",
+        fullPage: true,
+      });
+    }
     console.error("No working search input found");
     return null;
   }
@@ -288,6 +294,9 @@ export class BrowserManager {
           "Navigation issue detected:",
           gotoError instanceof Error ? gotoError.message : String(gotoError),
         );
+        if (gotoError instanceof Error && gotoError.message.includes("internal error")) {
+          throw gotoError;
+        }
       }
       if (this.page.isClosed() || this.page.mainFrame().isDetached()) {
         console.error(

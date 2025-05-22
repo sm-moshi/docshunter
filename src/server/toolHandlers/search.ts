@@ -16,5 +16,9 @@ export async function handleSearch(
     default:
       prompt = `Provide a clear, balanced answer to: ${query}. Include key points and relevant context.`;
   }
-  return await performSearch(prompt);
+  try {
+    return await performSearch(prompt);
+  } catch {
+    throw new Error('Search failed');
+  }
 }
