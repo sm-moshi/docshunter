@@ -7,8 +7,13 @@
     "build": "tsc",
     "start": "node build/main.js",
     "test": "vitest",
-    "test:coverage": "vitest --coverage",
-    "lint": "biome lint .",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+
+    "test:watch": "vitest --watch",
+    "test:unit": "vitest run src/**/*.test.ts",
+    "test:integration": "vitest run src/__tests__/integration/*.test.ts",
+    "lint": "biome lint . --write",
     "format": "biome format . --write",
     "update-docs-date": "node scripts/update-docs-date.js"
   },
@@ -36,6 +41,7 @@
     "@types/minimist": "1.2.5",
     "@types/node": "22.15.21",
     "@vitest/coverage-v8": "3.1.4",
+
     "typescript": "5.8.3",
     "vitest": "3.1.4"
   }

@@ -191,6 +191,40 @@
 - **Mock file system operations** using `memfs` for Node.js file testing.
 - **Use MSW (Mock Service Worker)** for HTTP request mocking in integration tests.
 
+### **🎯 Docshunter Testing Experience (2025-05-23)**
+
+**Real-World Complexity**: Testing is challenging for systems with external dependencies:
+
+- **Complex Dependencies**: Browser automation, AI APIs, file operations
+- **Progressive Strategy**: Start with utilities, build foundation, expand gradually
+- **Real Code Testing**: Prefer actual operations over mocks where possible
+
+**Proven Patterns from Docshunter**:
+
+```typescript
+// Real database testing with better-sqlite3
+const db = new Database(":memory:");
+initializeDatabase(db);
+saveChatMessage(db, "test-id", { role: "user", content: "test" });
+const history = getChatHistory(db, "test-id");
+expect(history).toHaveLength(1);
+
+// Real logging testing with console capture
+const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+logInfo("test message");
+expect(spy.mock.calls[0]?.[0]).toContain("[INFO]");
+
+// Configuration testing with comprehensive property access
+const { TIMEOUT_PROFILES } = CONFIG;
+expect(Object.values(TIMEOUT_PROFILES).every(t => t > 0)).toBe(true);
+```
+
+**Coverage Philosophy**: **Foundation first, business logic second**
+
+- ✅ **154 tests** with 1.83% coverage
+- ✅ **100% coverage** on critical utilities (`db.ts`, `logging.ts`, `config.ts`)
+- ⏳ **Gradual expansion** to business logic as mocking infrastructure improves
+
 ## pnpm
 
 - Use `pnpm install` for dependency management; it's faster and more space-efficient than npm/yarn.
@@ -472,4 +506,4 @@ server.tool('search_documentation', {
 - Prefer modular, capability-driven server/client design.
 
 ---
-_Last updated: Fri May 23 22:47:04 CEST 2025_
+_Last updated: Fri May 23 23:53:06 CEST 2025_
