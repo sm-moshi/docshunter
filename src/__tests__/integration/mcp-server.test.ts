@@ -18,7 +18,7 @@ vi.mock("puppeteer", () => ({
 describe("MCP Server Integration Tests", () => {
   beforeAll(async () => {
     // Setup integration test environment
-    process.env.NODE_ENV = "test";
+    Object.assign(process.env, { NODE_ENV: "test" });
   });
 
   afterAll(async () => {
