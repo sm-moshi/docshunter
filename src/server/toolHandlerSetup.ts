@@ -28,14 +28,14 @@ export type ToolHandlersRegistry = Record<string, ToolHandler>;
  * @param toolHandlers - Registry of tool handler functions
  */
 export function setupToolHandlers(server: Server, toolHandlers: ToolHandlersRegistry): void {
-  console.log(
+  console.error(
     `[DEBUG] Setting up ${Object.keys(toolHandlers).length} tool handlers: ${Object.keys(toolHandlers).join(", ")}`,
   );
-  console.log(`[DEBUG] Tool schemas available: ${TOOL_SCHEMAS.length} schemas`);
+  console.error(`[DEBUG] Tool schemas available: ${TOOL_SCHEMAS.length} schemas`);
 
   // Register ListTools handler
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    console.log(`[DEBUG] ListTools request received, returning ${TOOL_SCHEMAS.length} tools`);
+    console.error(`[DEBUG] ListTools request received, returning ${TOOL_SCHEMAS.length} tools`);
     return {
       tools: TOOL_SCHEMAS,
     };

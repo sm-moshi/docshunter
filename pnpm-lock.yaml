@@ -35,12 +35,15 @@ importers:
       minimist:
         specifier: 1.2.8
         version: 1.2.8
+      prune:
+        specifier: 0.0.2
+        version: 0.0.2
       puppeteer:
         specifier: 24.9.0
         version: 24.9.0(typescript@5.8.3)
       zod:
-        specifier: 3.25.24
-        version: 3.25.24
+        specifier: 3.25.27
+        version: 3.25.27
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -1126,6 +1129,9 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
+  lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+
   loupe@3.1.3:
     resolution: {integrity: sha512-kkIp7XSkP78ZxJEsSxW3712C6teJVoeHHwgo9zJ380de7IYyJ2ISlxojcH2pC5OFLewESmnRi/+XCDIEEVyoug==}
 
@@ -1319,6 +1325,9 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
+  prune@0.0.2:
+    resolution: {integrity: sha512-5ZDNTaYgyOElBdXH5kRWFvyrAj2yHkuR32g9lBftm0SjC3xaq9tU30Ft6TOMHDrQJKGeTtMzPt+KKF85qOOJbg==}
+
   pump@3.0.2:
     resolution: {integrity: sha512-tUPXtzlGM8FE3P0ZL6DVs/3P58k9nk8/jZeQCurTJylQA8qFYzHFfhBJkuqyE0FifOsQ0uKWekiZ5g8wtr28cw==}
 
@@ -1460,6 +1469,9 @@ packages:
 
   sprintf-js@1.1.3:
     resolution: {integrity: sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==}
+
+  sproutid@0.0.5:
+    resolution: {integrity: sha512-b4ToovLPYmdRzfvFhNS8DoHmv+TTW0AebcipzsrTcrHE8WMG3eGlDIJn584bXK95CbCktGQazNSA39Y9qgTDyA==}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -1753,8 +1765,8 @@ packages:
     peerDependencies:
       zod: ^3.24.1
 
-  zod@3.25.24:
-    resolution: {integrity: sha512-E77RpEqxeBGBVbcK/5QKQsLM+3u6aN7pVgiGJENbwYfdsExPS/xyyUMfmeM3eY32LBCIjuzv6XU505sHn2t+Kw==}
+  zod@3.25.27:
+    resolution: {integrity: sha512-xkYsE+ztNLzBeoAG8Ipd2ICr86gyMpovQlB+Vid1LT7V16/Dj0z+Up1u1qxNX58cmJ/AtG2mvGw/7+jK48xEYw==}
 
 snapshots:
 
@@ -1961,8 +1973,8 @@ snapshots:
       express-rate-limit: 7.5.0(express@5.1.0)
       pkce-challenge: 5.0.0
       raw-body: 3.0.0
-      zod: 3.25.24
-      zod-to-json-schema: 3.24.5(zod@3.25.24)
+      zod: 3.25.27
+      zod-to-json-schema: 3.24.5(zod@3.25.27)
     transitivePeerDependencies:
       - supports-color
 
@@ -2280,7 +2292,7 @@ snapshots:
     dependencies:
       devtools-protocol: 0.0.1439962
       mitt: 3.0.1
-      zod: 3.25.24
+      zod: 3.25.27
 
   cliui@8.0.1:
     dependencies:
@@ -2758,6 +2770,8 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
+  lodash@4.17.21: {}
+
   loupe@3.1.3: {}
 
   lru-cache@10.4.3: {}
@@ -2938,6 +2952,11 @@ snapshots:
       - supports-color
 
   proxy-from-env@1.1.0: {}
+
+  prune@0.0.2:
+    dependencies:
+      lodash: 4.17.21
+      sproutid: 0.0.5
 
   pump@3.0.2:
     dependencies:
@@ -3147,6 +3166,10 @@ snapshots:
     optional: true
 
   sprintf-js@1.1.3: {}
+
+  sproutid@0.0.5:
+    dependencies:
+      lodash: 4.17.21
 
   stackback@0.0.2: {}
 
@@ -3431,8 +3454,8 @@ snapshots:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
 
-  zod-to-json-schema@3.24.5(zod@3.25.24):
+  zod-to-json-schema@3.24.5(zod@3.25.27):
     dependencies:
-      zod: 3.25.24
+      zod: 3.25.27
 
-  zod@3.25.24: {}
+  zod@3.25.27: {}

@@ -59,33 +59,57 @@ export class DocshunterServer {
   private server: Server;
 
   constructor() {
-    this.server = new Server(
-      { name: "docshunter", version: "0.2.0" },
-      { capabilities: { tools: {} } },
-    );
+    // Add error handling for constructor
+    try {
+      this.server = new Server(
+        { name: "docshunter", version: "0.2.0" },
+        {
+          capabilities: {
+            tools: {
+              listChanged: true,
+            },
+          },
+        },
+      );
 
-    // Initialize SQLite database (chat history) in the server's directory
-    const dbPath = join(dirname(fileURLToPath(import.meta.url)), "..", "chat_history.db");
-    const dbDir = dirname(dbPath);
-    if (!existsSync(dbDir)) {
-      mkdirSync(dbDir, { recursive: true });
+      // Initialize SQLite database (chat history) in the server's directory
+      const dbPath = join(dirname(fileURLToPath(import.meta.url)), "..", "chat_history.db");
+      const dbDir = dirname(dbPath);
+      logInfo(`Database path: ${dbPath}`);
+      if (!existsSync(dbDir)) {
+        mkdirSync(dbDir, { recursive: true });
+        logInfo(`Created database directory: ${dbDir}`);
+      }
+      this.db = new Database(dbPath, { fileMustExist: false });
+      initializeDatabase(this.db);
+      logInfo("Database initialized successfully");
+
+      this.setupToolHandlers();
+      logInfo("Tool handlers setup completed");
+
+      // Graceful shutdown on SIGINT - but only if not in MCP mode
+      if (!("MCP_MODE" in process.env)) {
+        process.on("SIGINT", async () => {
+          logInfo("SIGINT received, shutting down gracefully...");
+          if (this.browser) {
+            await this.browser.close();
+          }
+          if (this.db) {
+            this.db.close();
+          }
+          await this.server.close();
+          process.exit(0);
+        });
+      }
+
+      logInfo("DocshunterServer constructor completed successfully");
+    } catch (error) {
+      logError("Error in DocshunterServer constructor:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
     }
-    this.db = new Database(dbPath, { fileMustExist: false });
-    initializeDatabase(this.db);
-
-    this.setupToolHandlers();
-
-    // Graceful shutdown on SIGINT
-    process.on("SIGINT", async () => {
-      if (this.browser) {
-        await this.browser.close();
-      }
-      if (this.db) {
-        this.db.close();
-      }
-      await this.server.close();
-      process.exit(0);
-    });
   }
 
   private getPuppeteerContext(): PuppeteerContext {
@@ -275,15 +299,15 @@ export class DocshunterServer {
             noChangeCounter++;
 
             if (currentLength > 1000 && stabilityCounter >= 3) {
-              console.log("Long answer stabilized, exiting early");
+              console.error("Long answer stabilized, exiting early");
               break;
             }
             if (currentLength > 500 && stabilityCounter >= 4) {
-              console.log("Medium answer stabilized, exiting");
+              console.error("Medium answer stabilized, exiting");
               break;
             }
             if (stabilityCounter >= 5) {
-              console.log("Short answer stabilized, exiting");
+              console.error("Short answer stabilized, exiting");
               break;
             }
           } else {
@@ -293,7 +317,7 @@ export class DocshunterServer {
           lastAnswer = currentAnswer;
 
           if (noChangeCounter >= 10 && currentLength > 200) {
-            console.log("Content stopped growing but has sufficient information");
+            console.error("Content stopped growing but has sufficient information");
             break;
           }
         }
@@ -305,7 +329,7 @@ export class DocshunterServer {
           lastProse?.textContent?.includes("!");
 
         if (isComplete && stabilityCounter >= 2 && currentLength > 100) {
-          console.log("Completion indicators found, exiting");
+          console.error("Completion indicators found, exiting");
           break;
         }
       }
@@ -379,6 +403,13 @@ export class DocshunterServer {
 
       if (!ctx.page || ctx.page.isClosed()) {
         throw new Error("Page initialization failed or page was closed");
+      }
+
+      // Ensure we're on Perplexity - check if we need to navigate
+      const currentUrl = ctx.page.url();
+      if (!currentUrl.includes("perplexity.ai")) {
+        logInfo("Not on Perplexity page, navigating...");
+        await navigateToPerplexity(ctx);
       }
 
       // Reset idle timeout
@@ -808,7 +839,7 @@ export class DocshunterServer {
         for (const selector of selectors) {
           const element = document.querySelector(selector) as HTMLElement | null;
           if (element?.innerText && element.innerText.trim().length > 100) {
-            console.log(`Fallback using selector: ${selector}`);
+            console.error(`Fallback using selector: ${selector}`);
             return { text: element.innerText.trim(), selector: selector };
           }
         }
@@ -821,7 +852,7 @@ export class DocshunterServer {
         }
         const bodyText = bodyClone.innerText.trim();
         if (bodyText.length > 200) {
-          console.log("Fallback using filtered body text.");
+          console.error("Fallback using filtered body text.");
           return { text: bodyText, selector: "body (filtered)" };
         }
         return null;
@@ -956,18 +987,24 @@ export class DocshunterServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-
-    logInfo("Starting DocshunterServer...");
-    logInfo(`Tools registered: ${Object.keys(this.getToolHandlersRegistry()).join(", ")}`);
-
     try {
+      logInfo("Creating StdioServerTransport...");
+      const transport = new StdioServerTransport();
+
+      logInfo("Starting DocshunterServer...");
+      logInfo(`Tools registered: ${Object.keys(this.getToolHandlersRegistry()).join(", ")}`);
+
+      logInfo("Attempting to connect server to transport...");
       await this.server.connect(transport);
       logInfo("DocshunterServer connected and ready");
       logInfo("Server is listening for requests...");
+
+      // Keep the process alive
+      process.stdin.resume();
     } catch (error) {
       logError("Failed to start server:", {
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
       process.exit(1);
     }

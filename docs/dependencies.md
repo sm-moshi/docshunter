@@ -19,15 +19,17 @@
 ## AI / Model Context Protocol (MCP)
 
 - **@modelcontextprotocol/sdk**: SDK for building MCP servers/clients. [GitHub](https://github.com/modelcontextprotocol/modelcontextprotocol)
-- **MCP Protocol**: Standard for tool/resource/prompt integration with AI. [Docs](https://modelcontextprotocol.io/specification/2025-03-26)
+- **MCP Protocol**: Standard for tool/resource/prompt integration with AI. [Docs](https://modelcontextprotocol.io/specification/2025-05-23)
 
 ### **🚨 Cursor 0.50+ Compatibility**
+
 - **BREAKING**: Tool names with dashes (`-`) no longer work - use underscores (`_`)
 - **Tool limit**: Maximum 40 tools recognized - prioritize essential tools first
 - **New features**: Individual tool disabling, image context, remote workspace support
 - **Performance**: Streamable HTTP support and fixed memory leaks
 
-### **MCP Specification Updates (2025-03-26)**
+### **MCP Specification Updates (2025-05-23)**
+
 - Enhanced security model with mandatory user consent patterns
 - Standardized error codes for better debugging and reliability
 - Improved context management for large-scale integrations
@@ -43,4 +45,4 @@
 - **@vitest/coverage-v8**: V8-based coverage provider for Vitest. [vitest.dev/guide/coverage](https://vitest.dev/guide/coverage.html)
 
 ---
-_Last updated: Fri May 23 19:59:51 CEST 2025_
+_Last updated: Fri May 23 22:47:04 CEST 2025_

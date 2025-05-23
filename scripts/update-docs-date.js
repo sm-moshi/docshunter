@@ -6,6 +6,7 @@ import path from "node:path";
 const files = [
   path.join(path.dirname(new URL(import.meta.url).pathname), "../docs/best-practices.md"),
   path.join(path.dirname(new URL(import.meta.url).pathname), "../docs/dependencies.md"),
+  path.join(path.dirname(new URL(import.meta.url).pathname), "../docs/refactor-guide-phase-1.md"),
 ];
 
 const date = execSync("date").toString().trim();

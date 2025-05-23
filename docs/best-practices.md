@@ -3,6 +3,7 @@
 ## Puppeteer
 
 ### **Browser Automation & Lifecycle**
+
 - Always use async/await for browser automation.
 - Prefer launching with explicit options (e.g., `{ headless: true }` for CI, `{ headless: false }` for debugging).
 - Use `page.waitForSelector` before interacting with elements to avoid race conditions.
@@ -12,7 +13,9 @@
 - Avoid hardcoding selectors; prefer ARIA selectors or robust CSS selectors.
 
 ### **🆕 Modern Error Handling & Recovery**
+
 - **Listen for failed requests** with proper error classification:
+
   ```typescript
   page.on('requestfailed', request => {
     const failure = request.failure();
@@ -21,14 +24,18 @@
     }
   });
   ```
+
 - **Handle specific error codes** using the ErrorCode enum:
+
   ```typescript
   // Available error codes: 'aborted', 'accessdenied', 'timedout', 'failed', etc.
   if (request.failure()?.errorText.includes('timedout')) {
     // Handle timeout specifically
   }
   ```
+
 - **Use TimeoutError for proper timeout handling**:
+
   ```typescript
   try {
     await page.waitForSelector('.selector', { timeout: 5000 });
@@ -40,7 +47,9 @@
   ```
 
 ### **🆕 Advanced Request Interception**
+
 - **Always check interception status** to avoid conflicts:
+
   ```typescript
   page.on('request', interceptedRequest => {
     if (interceptedRequest.isInterceptResolutionHandled()) return;
@@ -48,7 +57,9 @@
     interceptedRequest.continue();
   });
   ```
+
 - **Handle async interception properly**:
+
   ```typescript
   page.on('request', async interceptedRequest => {
     if (interceptedRequest.isInterceptResolutionHandled()) return;
@@ -60,15 +71,19 @@
     interceptedRequest.continue();
   });
   ```
+
 - **Use cooperative intercept mode** for multiple handlers with priorities.
 
 ### **🆕 Memory Management & Performance**
+
 - **Dispose of ElementHandles explicitly**:
+
   ```typescript
   const element = await page.waitForSelector('.selector');
   await element.click();
   await element.dispose(); // Prevent memory leaks
   ```
+
 - **Use page pools** for concurrent operations to avoid browser overhead.
 - **Monitor resource usage** and set appropriate timeouts for long-running operations.
 
@@ -102,31 +117,40 @@
 ## Vitest
 
 ### **Testing Strategy & Organization**
+
 - **Use descriptive test names** that explain the expected behavior.
 - **Group related tests** using `describe` blocks for better organization.
 - **Use setup/teardown hooks** (`beforeEach`, `afterEach`, `beforeAll`, `afterAll`) for common setup.
 
 ### **🆕 Modern Mocking Best Practices**
+
 - **Mock external dependencies** at the module level:
+
   ```typescript
   vi.mock('puppeteer', () => ({
     launch: vi.fn().mockResolvedValue(mockBrowser)
   }));
   ```
+
 - **Use `vi.spyOn` for observing real implementations**:
+
   ```typescript
   const spy = vi.spyOn(service, 'method');
   expect(spy).toHaveBeenCalledWith(expectedArgs);
   spy.mockRestore(); // Clean up
   ```
+
 - **Mock browser APIs for Node.js testing**:
+
   ```typescript
   vi.stubGlobal('fetch', vi.fn());
   vi.stubGlobal('IntersectionObserver', mockIntersectionObserver);
   ```
 
 ### **🆕 Async Testing Patterns**
+
 - **Use `vi.useFakeTimers()` for time-dependent tests**:
+
   ```typescript
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
@@ -138,13 +162,16 @@
     expect(mock).toHaveBeenCalled();
   });
   ```
+
 - **Handle promise-based operations** with proper async/await patterns.
 - **Test error scenarios** using `mockRejectedValue` and `expect().rejects`.
 
 ### **🆕 Coverage & Quality**
+
 - **Aim for meaningful coverage**, not just high percentages.
 - **Use `--coverage` flag** to generate detailed reports.
 - **Set coverage thresholds** in `vitest.config.ts`:
+
   ```typescript
   test: {
     coverage: {
@@ -159,6 +186,7 @@
   ```
 
 ### **🆕 Advanced Testing Patterns**
+
 - **Test database operations** with in-memory SQLite or mocked clients.
 - **Mock file system operations** using `memfs` for Node.js file testing.
 - **Use MSW (Mock Service Worker)** for HTTP request mocking in integration tests.
@@ -175,7 +203,9 @@
 ## Zod (Runtime Validation)
 
 ### **🚨 CRITICAL: Schema Design & Runtime Safety**
+
 - **Always validate external input** using Zod schemas before business logic:
+
   ```typescript
   const UserSchema = z.object({
     name: z.string().min(1),
@@ -188,7 +218,9 @@
   ```
 
 ### **🆕 Error Handling Patterns**
+
 - **Use `.safeParse()` to avoid try/catch**:
+
   ```typescript
   const result = UserSchema.safeParse(data);
   if (!result.success) {
@@ -196,7 +228,9 @@
   }
   const validData = result.data; // Type-safe validated data
   ```
+
 - **Handle validation errors gracefully**:
+
   ```typescript
   if (!result.success) {
     const errors = result.error.issues.map(issue => ({
@@ -209,7 +243,9 @@
   ```
 
 ### **🆕 Advanced Validation Patterns**
+
 - **Custom validation with `.refine()`**:
+
   ```typescript
   const PasswordSchema = z.object({
     password: z.string().min(8),
@@ -219,11 +255,15 @@
     path: ["confirmPassword"]
   });
   ```
+
 - **Transform data during validation**:
+
   ```typescript
   const NumberFromString = z.string().transform(val => Number(val));
   ```
+
 - **Use `.catch()` for fallback values**:
+
   ```typescript
   const ConfigSchema = z.object({
     timeout: z.number().catch(5000), // Default to 5000 if invalid
@@ -232,7 +272,9 @@
   ```
 
 ### **🆕 MCP Tool Integration**
+
 - **Validate all MCP tool inputs** at handler entry points:
+
   ```typescript
   export async function toolHandler(args: unknown) {
     const result = ToolInputSchema.safeParse(args);
@@ -242,6 +284,7 @@
     // Type-safe business logic with result.data
   }
   ```
+
 - **Create tool-specific schemas** that match MCP JSON Schema definitions.
 - **Generate documentation** from Zod schemas for consistency.
 
@@ -250,9 +293,11 @@
 ### **🚨 CRITICAL: MCP 2025 Updates**
 
 #### **Tool Naming Convention (BREAKING CHANGE)**
+
 - **REQUIRED**: Use underscores (`_`) in tool names, NOT dashes (`-`)
 - **Cursor 0.50+** no longer recognizes tools with dashes
 - **Example Fix**:
+
   ```json
   // ❌ BROKEN - Will not work
   "search-docs": { "description": "Search documentation" }
@@ -262,11 +307,13 @@
   ```
 
 #### **Tool Limit Discovery**
+
 - **Cursor has a 40-tool limit** - only first 40 tools in `mcp.json` are recognized
 - **Order matters** - place critical tools first in configuration
 - **Consolidate tools** when possible to stay under limit
 
 #### **Cursor 0.50+ MCP Enhancements**
+
 - **Individual tool disabling** - Disable specific MCP tools from Cursor settings
 - **Image context support** - Pass screenshots, UI mocks, diagrams as MCP context
 - **Remote workspace support** - Run stdio MCP from WSL/Remote SSH
@@ -274,7 +321,9 @@
 - **Fixed memory leaks** - More reliable SSE connections and refresh handling
 
 ### **🆕 Security Best Practices (MCP Spec 2025-03-26)**
+
 - **User consent required** for all data access and tool execution:
+
   ```typescript
   interface MCPSecurityContext {
     userConsent: {
@@ -288,12 +337,15 @@
     };
   }
   ```
+
 - **Explicit approval** needed before invoking any tool
 - **Clear documentation** of security implications required
 - **Access controls** and data protections must be implemented
 
 ### **🆕 Enhanced Error Handling (MCP 2025)**
+
 - **Use standardized error codes** for better debugging:
+
   ```typescript
   enum MCPErrorCode {
     ParseError = -32700,
@@ -309,6 +361,7 @@
   ```
 
 ### **🆕 Cursor Agent Integration**
+
 - **Background agents** (0.50) - Run multiple agents in parallel
 - **Search & replace tool** - ~2x faster for long file operations
 - **Enhanced terminal control** - Edit commands before execution
@@ -317,6 +370,7 @@
 ### **🌊 Streamable HTTP Support (MCP 2025)**
 
 #### **Why SSE for MCP?**
+
 - **Not "outdated"** - SSE is pragmatic for MCP's one-way server-to-client streaming
 - **Simpler than WebSockets** - Perfect for unidirectional data flow (server streams to Cursor)
 - **Firewall-friendly** - HTTP-based, works through corporate proxies
@@ -324,6 +378,7 @@
 - **Wide compatibility** - Works reliably across different network environments
 
 #### **When to Use Streaming**
+
 - **Browser automation progress** (navigation, DOM waiting, content detection)
 - **Long-running operations** (web scraping, multi-step processes)
 - **Uncertain timing operations** (third-party website response times)
@@ -332,6 +387,7 @@
 - **Memory efficiency** (handle large datasets without buffering)
 
 #### **Implementation Pattern**
+
 ```typescript
 // Server-Sent Events (SSE) implementation
 import { MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
@@ -376,6 +432,7 @@ server.tool('search_documentation', {
 ```
 
 #### **Client Configuration**
+
 ```json
 // .cursor/mcp.json
 {
@@ -395,6 +452,7 @@ server.tool('search_documentation', {
 ```
 
 #### **Benefits for Docshunter**
+
 - **Immediate feedback** - Users see results as they arrive
 - **Memory efficiency** - No need to buffer large responses
 - **Better UX** - Progressive loading instead of long waits
@@ -402,6 +460,7 @@ server.tool('search_documentation', {
 - **Cancellation support** - Stop streaming if not needed
 
 ### **Legacy Best Practices**
+
 - Use the official SDKs for server/client implementations.
 - Register tools, resources, and prompts explicitly in the server.
 - Use stdio or HTTP transports for local and remote integration.
@@ -413,4 +472,4 @@ server.tool('search_documentation', {
 - Prefer modular, capability-driven server/client design.
 
 ---
-_Last updated: Fri May 23 19:59:51 CEST 2025_
+_Last updated: Fri May 23 22:47:04 CEST 2025_

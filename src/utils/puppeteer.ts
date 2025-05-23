@@ -79,10 +79,25 @@ export async function initializeBrowser(ctx: PuppeteerContext) {
     });
     await page.setUserAgent(CONFIG.USER_AGENT);
     page.setDefaultNavigationTimeout(CONFIG.PAGE_TIMEOUT);
-    await navigateToPerplexity(ctx);
+
+    logInfo("Browser initialized successfully, skipping navigation in initialization");
+    // Don't navigate to Perplexity during initialization - let individual tools handle navigation
+    // await navigateToPerplexity(ctx);
   } catch (error) {
     logError(`Browser initialization failed: ${error}`);
-    throw error;
+    if (ctx.browser) {
+      // Clean up on failure
+      try {
+        await ctx.browser.close();
+      } catch (closeError) {
+        logError(`Failed to close browser after initialization error: ${closeError}`);
+      }
+      ctx.setBrowser(null);
+    }
+    ctx.setPage(null);
+    throw new Error(
+      `Page not initialized: ${error instanceof Error ? error.message : String(error)}`,
+    );
   } finally {
     ctx.setIsInitializing(false);
   }

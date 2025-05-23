@@ -161,7 +161,7 @@ export async function fetchSinglePageContent(
       for (const selector of selectors) {
         const element = document.querySelector(selector) as HTMLElement | null;
         if (element?.innerText && element.innerText.trim().length > 100) {
-          console.log(`Fallback using selector: ${selector}`);
+          console.error(`Fallback using selector: ${selector}`);
           return { text: element.innerText.trim(), selector: selector };
         }
       }
@@ -178,7 +178,7 @@ export async function fetchSinglePageContent(
 
       const bodyText = bodyClone.innerText.trim();
       if (bodyText.length > 200) {
-        console.log("Fallback using filtered body text.");
+        console.error("Fallback using filtered body text.");
         return { text: bodyText, selector: "body (filtered)" };
       }
 

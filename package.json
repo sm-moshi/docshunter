@@ -1,6 +1,6 @@
 {
   "name": "docshunter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server using Puppeteer to interact with Perplexity.ai without an API key.",
   "main": "build/main.js",
   "scripts": {
@@ -26,8 +26,9 @@
     "better-sqlite3": "11.10.0",
     "jsdom": "26.1.0",
     "minimist": "1.2.8",
+    "prune": "0.0.2",
     "puppeteer": "24.9.0",
-    "zod": "3.25.24"
+    "zod": "3.25.27"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
