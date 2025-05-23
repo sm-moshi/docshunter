@@ -24,8 +24,10 @@ chat_history.db
 pnpm-lock.yaml
 
 # Local Dev
-memory-bank/*.md
-docs/zeugs/**
+memory-bank/
+docs/zeugs/
+.repomix/
+.cursor/
 
 # Coverage
 coverage/lcov-report/

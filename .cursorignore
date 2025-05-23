@@ -1,1 +1,3 @@
 docs/zeugs/**
+memory-bank/*.md
+node_modules/** */

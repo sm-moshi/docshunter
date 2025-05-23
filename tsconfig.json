@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
-    "lib": [ "ES2022" ],
+    "lib": ["ES2022"],
     "outDir": "build",
     "rootDir": "src",
     "strict": true,
@@ -16,5 +16,6 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true
   },
-  "include": [ "src" ]
+  "include": ["src"],
+  "exclude": ["docs/"]
 }
