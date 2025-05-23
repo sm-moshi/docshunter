@@ -1,13 +1,12 @@
 /**
- * Tool handler for 'get_documentation'.
- * Provides comprehensive documentation and usage examples for a given query, using the Perplexity search logic.
- * @param args - { query: string; context?: string }
- * @param ctx - PuppeteerContext for browser operations
- * @param performSearch - Function to perform the search (prompt: string, ctx: PuppeteerContext) => Promise<string>
- * @returns The documentation string result
+ * Tool implementation for documentation retrieval
  */
-import type { PuppeteerContext } from "../utils/puppeteer.js";
 
+import type { PuppeteerContext } from "../types/index.js";
+
+/**
+ * Handles documentation fetching and formatting
+ */
 export default async function getDocumentation(
   args: { query: string; context?: string },
   ctx: PuppeteerContext,

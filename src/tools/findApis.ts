@@ -1,13 +1,12 @@
 /**
- * Tool handler for 'find_apis'.
- * Finds and evaluates APIs for a given requirement, using the Perplexity search logic.
- * @param args - { requirement: string; context?: string }
- * @param ctx - PuppeteerContext for browser operations
- * @param performSearch - Function to perform the search (prompt: string, ctx: PuppeteerContext) => Promise<string>
- * @returns The API evaluation string result
+ * Tool implementation for finding APIs
  */
-import type { PuppeteerContext } from "../utils/puppeteer.js";
 
+import type { PuppeteerContext } from "../types/index.js";
+
+/**
+ * Handles API discovery and comparison
+ */
 export default async function findApis(
   args: { requirement: string; context?: string },
   ctx: PuppeteerContext,

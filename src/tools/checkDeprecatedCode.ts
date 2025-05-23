@@ -6,7 +6,7 @@
  * @param performSearch - Function to perform the search (prompt: string, ctx: PuppeteerContext) => Promise<string>
  * @returns The deprecation analysis string result
  */
-import type { PuppeteerContext } from "../utils/puppeteer.js";
+import type { PuppeteerContext } from "../types/index.js";
 
 export default async function checkDeprecatedCode(
   args: { code: string; technology?: string },
