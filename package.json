@@ -8,7 +8,8 @@
     "start": "node build/index.js",
     "test": "vitest",
     "lint": "biome lint .",
-    "format": "biome format . --write"
+    "format": "biome format . --write",
+    "update-docs-date": "node scripts/update-docs-date.js"
 },
 "keywords": [ "mcp", "perplexity", "puppeteer", "ai", "research" ],
 "author": "sm-moshi",

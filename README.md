@@ -51,13 +51,13 @@ cd docshunter
 2. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build the server:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 > **Important**: Ensure you have Node.js installed. Puppeteer will download a compatible browser version if needed during installation. Restart your IDE/Application after building and configuring the project for changes to take effect.
@@ -73,7 +73,7 @@ Example for Cline/RooCode Extension:
 ```json
 {
   "mcpServers": {
-    "perplexity-server": {
+    "docshunter": {
       "command": "node",
       "args": [
         "/full/path/to/your/docshunter/build/index.js" // <-- Replace this path! (in case of windows for ex: "C:\\Users\\$USER\\Documents\\Cline\\MCP\\docshunter\\build\\index.js"
@@ -93,7 +93,7 @@ Example for Claude Desktop:
 ```json
 {
   "mcpServers": {
-    "perplexity-server": {
+    "docshunter": {
       "command": "node",
       "args": [
         "/full/path/to/your/docshunter/build/index.js" // <-- Replace this path!
@@ -129,3 +129,17 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ## Disclaimer
 
 This project interacts with the Perplexity website via web automation (Puppeteer). It is intended for educational and research purposes only. Web scraping and automation may be against the terms of service of the target website. The author does not endorse or encourage any unauthorized automation or violation of terms of service. Use responsibly and ethically. The stability of this server depends on the Perplexity website's structure remaining consistent.
+
+## 🧹 Technical Debt & Refactor Roadmap
+
+This project is currently in **Phase 1** of a major refactor. The main server logic is still monolithic (`src/index.ts`), and modularization is in progress. Key improvements planned:
+
+- Move server, database, puppeteer, and tool handler logic to dedicated modules.
+- Add Zod schema validation for all tool handler inputs/outputs.
+- Standardize error handling and logging.
+- Centralize configuration.
+- Prepare for plugin/dynamic tool registration.
+- Refactor for unit/integration testability.
+- Fix all linter issues.
+
+For a detailed migration plan and current audit findings, see [`docs/refactor-guide-phase-1.md`](docs/refactor-guide-phase-1.md#-audit-findings-as-of-2025-05-xx).
