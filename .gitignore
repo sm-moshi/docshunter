@@ -29,5 +29,5 @@ docs/zeugs/
 .cursor/
 
 # Coverage
-coverage/**
+coverage/*
 !coverage/lcov.info
