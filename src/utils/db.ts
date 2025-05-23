@@ -1,10 +1,14 @@
+/**
+ * Database utility functions for chat message storage and retrieval
+ */
+
 import type Database from "better-sqlite3";
+import type { ChatMessage } from "../types/index.js";
 
 /**
- * Initializes the chat history tables in the provided SQLite database.
- * @param db The better-sqlite3 Database instance.
+ * Initializes the SQLite database schema for chat storage
  */
-export function initializeDatabase(db: Database.Database) {
+export function initializeDatabase(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY,
@@ -21,11 +25,6 @@ export function initializeDatabase(db: Database.Database) {
       FOREIGN KEY (chat_id) REFERENCES chats(id)
     )
   `);
-}
-
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
 }
 
 /**

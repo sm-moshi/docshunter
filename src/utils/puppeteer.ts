@@ -1,31 +1,16 @@
+/**
+ * Puppeteer utility functions for browser automation, navigation, and recovery
+ */
 import puppeteer, { type Browser, type Page } from "puppeteer";
+import type { PuppeteerContext } from "../types/index.js";
 import { CONFIG } from "../server/config.js";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
-
-// Context type for passing browser/page/state
-export interface PuppeteerContext {
-  browser: Browser | null;
-  page: Page | null;
-  isInitializing: boolean;
-  searchInputSelector: string;
-  lastSearchTime: number;
-  idleTimeout: NodeJS.Timeout | null;
-  operationCount: number;
-  log: (level: "info" | "error" | "warn", message: string) => void;
-  setBrowser: (browser: Browser | null) => void;
-  setPage: (page: Page | null) => void;
-  setIsInitializing: (val: boolean) => void;
-  setSearchInputSelector: (selector: string) => void;
-  setIdleTimeout: (timeout: NodeJS.Timeout | null) => void;
-  incrementOperationCount: () => number;
-  determineRecoveryLevel: (error?: Error) => number;
-  IDLE_TIMEOUT_MS: number;
-}
+import { logInfo, logWarn, logError } from "./logging.js";
 
 export async function initializeBrowser(ctx: PuppeteerContext) {
   if (ctx.isInitializing) {
-    ctx.log("info", "Browser initialization already in progress...");
+    logInfo("Browser initialization already in progress...");
     return;
   }
   ctx.setIsInitializing(true);
@@ -96,7 +81,7 @@ export async function initializeBrowser(ctx: PuppeteerContext) {
     page.setDefaultNavigationTimeout(CONFIG.PAGE_TIMEOUT);
     await navigateToPerplexity(ctx);
   } catch (error) {
-    ctx.log("error", `Browser initialization failed: ${error}`);
+    logError(`Browser initialization failed: ${error}`);
     throw error;
   } finally {
     ctx.setIsInitializing(false);
@@ -107,7 +92,7 @@ export async function navigateToPerplexity(ctx: PuppeteerContext) {
   const { page } = ctx;
   if (!page) throw new Error("Page not initialized");
   try {
-    ctx.log("info", "Navigating to Perplexity.ai...");
+    logInfo("Navigating to Perplexity.ai...");
     try {
       await page.goto("https://www.perplexity.ai/", {
         waitUntil: "domcontentloaded",
@@ -125,22 +110,21 @@ export async function navigateToPerplexity(ctx: PuppeteerContext) {
         !gotoError.message.toLowerCase().includes("timeout") &&
         !gotoError.message.includes("internal error")
       ) {
-        ctx.log("error", `Initial navigation request failed: ${gotoError}`);
+        logError(`Initial navigation request failed: ${gotoError}`);
         throw gotoError;
       }
-      ctx.log(
-        "warn",
+      logWarn(
         `Navigation issue detected: ${gotoError instanceof Error ? gotoError.message : String(gotoError)}`,
       );
     }
     if (page.isClosed() || page.mainFrame().isDetached()) {
-      ctx.log("error", "Page closed or frame detached immediately after navigation attempt.");
+      logError("Page closed or frame detached immediately after navigation attempt.");
       throw new Error("Frame detached during navigation");
     }
-    ctx.log("info", "Navigation initiated, waiting for search input to confirm readiness...");
+    logInfo("Navigation initiated, waiting for search input to confirm readiness...");
     const searchInput = await waitForSearchInput(ctx);
     if (!searchInput) {
-      ctx.log("error", "Search input not found after navigation, taking screenshot for debugging");
+      logError("Search input not found after navigation, taking screenshot for debugging");
       if (!page.isClosed()) {
         await page.screenshot({ path: "debug_no_search_input.png", fullPage: true });
       }
@@ -148,7 +132,7 @@ export async function navigateToPerplexity(ctx: PuppeteerContext) {
         "Search input not found after navigation - page might not have loaded correctly",
       );
     }
-    ctx.log("info", "Search input found, page appears ready.");
+    logInfo("Search input found, page appears ready.");
     await new Promise((resolve) => setTimeout(resolve, 3000));
     let pageTitle = "N/A";
     let pageUrl = "N/A";
@@ -158,23 +142,23 @@ export async function navigateToPerplexity(ctx: PuppeteerContext) {
         pageUrl = page.url();
       }
     } catch (titleError) {
-      ctx.log("warn", `Could not retrieve page title/URL after navigation: ${titleError}`);
+      logWarn(`Could not retrieve page title/URL after navigation: ${titleError}`);
     }
-    ctx.log("info", `Page loaded: ${pageUrl} (${pageTitle})`);
+    logInfo(`Page loaded: ${pageUrl} (${pageTitle})`);
     if (pageUrl !== "N/A" && !pageUrl.includes("perplexity.ai")) {
-      ctx.log("error", `Unexpected URL: ${pageUrl}`);
+      logError(`Unexpected URL: ${pageUrl}`);
       throw new Error(`Navigation redirected to unexpected URL: ${pageUrl}`);
     }
-    ctx.log("info", "Navigation and readiness check completed successfully");
+    logInfo("Navigation and readiness check completed successfully");
   } catch (error) {
-    ctx.log("error", `Navigation failed: ${error}`);
+    logError(`Navigation failed: ${error}`);
     try {
       if (page) {
         await page.screenshot({ path: "debug_navigation_failed.png", fullPage: true });
-        ctx.log("info", "Captured screenshot of failed navigation state");
+        logInfo("Captured screenshot of failed navigation state");
       }
     } catch (screenshotError) {
-      ctx.log("error", `Failed to capture screenshot: ${screenshotError}`);
+      logError(`Failed to capture screenshot: ${screenshotError}`);
     }
     throw error;
   }
@@ -290,17 +274,17 @@ export async function waitForSearchInput(
           return el && !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true";
         }, selector);
         if (isInteractive) {
-          ctx.log("info", `Found working search input: ${selector}`);
+          logInfo(`Found working search input: ${selector}`);
           setSearchInputSelector(selector);
           return selector;
         }
       }
     } catch (error) {
-      ctx.log("warn", `Selector '${selector}' not found or not interactive`);
+      logWarn(`Selector '${selector}' not found or not interactive`);
     }
   }
   await page.screenshot({ path: "debug_search_not_found.png", fullPage: true });
-  ctx.log("error", "No working search input found");
+  logError("No working search input found");
   return null;
 }
 
@@ -322,42 +306,40 @@ export async function checkForCaptcha(ctx: PuppeteerContext): Promise<boolean> {
 }
 
 export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): Promise<void> {
-  const recoveryLevel = ctx.determineRecoveryLevel ? ctx.determineRecoveryLevel(error) : 3;
+  let recoveryLevel = ctx.determineRecoveryLevel ? ctx.determineRecoveryLevel(error) : 3;
   const opId = ctx.incrementOperationCount();
 
-  ctx.log("info", "Starting recovery procedure");
+  logInfo("Starting recovery procedure");
 
   try {
     switch (recoveryLevel) {
       case 1: // Page refresh
-        ctx.log("info", "Attempting page refresh (Recovery Level 1)");
+        logInfo("Attempting page refresh (Recovery Level 1)");
         if (ctx.page && !ctx.page?.isClosed()) {
           try {
             await ctx.page.reload({ timeout: CONFIG.TIMEOUT_PROFILES.navigation });
           } catch (reloadError) {
-            ctx.log(
-              "warn",
+            logWarn(
               `Page reload failed: ${reloadError instanceof Error ? reloadError.message : String(reloadError)}. Proceeding with recovery.`,
             );
           }
         } else {
-          ctx.log("warn", "Page was null or closed, cannot refresh. Proceeding with recovery.");
+          logWarn("Page was null or closed, cannot refresh. Proceeding with recovery.");
         }
         break;
       case 2: // New page
-        ctx.log("info", "Creating new page instance (Recovery Level 2)");
+        logInfo("Creating new page instance (Recovery Level 2)");
         if (ctx.page) {
           try {
             if (!ctx.page?.isClosed()) await ctx.page.close();
           } catch (closeError) {
-            ctx.log(
-              "warn",
+            logWarn(
               `Ignoring error closing old page: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
             );
           }
           ctx.setPage(null);
         }
-        if (ctx.browser && ctx.browser.isConnected()) {
+        if (ctx.browser?.isConnected()) {
           try {
             const page = await ctx.browser.newPage();
             ctx.setPage(page);
@@ -365,29 +347,27 @@ export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): P
             await page.setViewport({ width: 1920, height: 1080 });
             await page.setUserAgent(CONFIG.USER_AGENT);
           } catch (newPageError) {
-            ctx.log(
-              "error",
+            logError(
               `Failed to create new page: ${newPageError instanceof Error ? newPageError.message : String(newPageError)}. Escalating to full restart.`,
             );
-            // Force level 3 if creating a new page fails
-            return await recoveryProcedure(ctx, new Error("Fallback recovery: new page failed"));
+            // Escalate to full restart
+            recoveryLevel = 3;
           }
         } else {
-          ctx.log(
-            "warn",
+          logWarn(
             "Browser was null or disconnected, cannot create new page. Escalating to full restart.",
           );
-          return await recoveryProcedure(ctx, new Error("Fallback recovery: browser disconnected"));
+          // Escalate to full restart
+          recoveryLevel = 3;
         }
         break;
       case 3:
-        ctx.log("info", "Performing full browser restart (Recovery Level 3)");
+        logInfo("Performing full browser restart (Recovery Level 3)");
         if (ctx.page) {
           try {
             if (!ctx.page?.isClosed()) await ctx.page.close();
           } catch (closeError) {
-            ctx.log(
-              "warn",
+            logWarn(
               `Ignoring error closing page during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
             );
           }
@@ -396,8 +376,7 @@ export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): P
           try {
             if (ctx.browser.isConnected()) await ctx.browser.close();
           } catch (closeError) {
-            ctx.log(
-              "warn",
+            logWarn(
               `Ignoring error closing browser during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
             );
           }
@@ -405,19 +384,18 @@ export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): P
         ctx.setPage(null);
         ctx.setBrowser(null);
         ctx.setIsInitializing(false); // Ensure flag is reset
-        ctx.log("info", "Waiting before re-initializing browser...");
+        logInfo("Waiting before re-initializing browser...");
         await new Promise((resolve) => setTimeout(resolve, CONFIG.RECOVERY_WAIT_TIME));
         await initializeBrowser(ctx); // This will set page and browser again
         break;
     }
-    ctx.log("info", "Recovery completed");
+    logInfo("Recovery completed");
   } catch (recoveryError) {
-    ctx.log(
-      "error",
+    logError(
       `Recovery failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`,
     );
     if (recoveryLevel < 3) {
-      ctx.log("info", "Attempting higher level recovery");
+      logInfo("Attempting higher level recovery");
       await recoveryProcedure(ctx, new Error("Fallback recovery"));
     } else {
       throw recoveryError;
@@ -431,7 +409,7 @@ export function resetIdleTimeout(ctx: PuppeteerContext) {
   }
   const timeout = setTimeout(
     async () => {
-      ctx.log("info", "Browser idle timeout reached, closing browser...");
+      logInfo("Browser idle timeout reached, closing browser...");
       try {
         if (ctx.page) {
           await ctx.page.close();
@@ -442,9 +420,9 @@ export function resetIdleTimeout(ctx: PuppeteerContext) {
           ctx.setBrowser(null);
         }
         ctx.setIsInitializing(false); // Reset initialization flag
-        ctx.log("info", "Browser cleanup completed successfully");
+        logInfo("Browser cleanup completed successfully");
       } catch (error) {
-        ctx.log("error", `Error during browser cleanup: ${error}`);
+        logError(`Error during browser cleanup: ${error}`);
         ctx.setPage(null);
         ctx.setBrowser(null);
         ctx.setIsInitializing(false);
@@ -465,16 +443,16 @@ export async function retryOperation<T>(
   let consecutiveNavigationErrors = 0;
   for (let i = 0; i < maxRetries; i++) {
     try {
-      ctx.log("info", `Attempt ${i + 1}/${maxRetries}...`);
+      logInfo(`Attempt ${i + 1}/${maxRetries}...`);
       const result = await operation();
       consecutiveTimeouts = 0;
       consecutiveNavigationErrors = 0;
       return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      ctx.log("error", `Attempt ${i + 1} failed: ${error}`);
+      logError(`Attempt ${i + 1} failed: ${error}`);
       if (i === maxRetries - 1) {
-        ctx.log("error", `Maximum retry attempts (${maxRetries}) reached. Giving up.`);
+        logError(`Maximum retry attempts (${maxRetries}) reached. Giving up.`);
         break;
       }
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -491,14 +469,12 @@ export async function retryOperation<T>(
         errorMsg.includes("session closed") ||
         errorMsg.includes("target closed");
       if (isDetachedFrameError || isProtocolError) {
-        ctx.log(
-          "error",
+        logError(
           `Detached frame or protocol error detected ('${errorMsg.substring(0, 100)}...'). Initiating immediate recovery.`,
         );
         await recoveryProcedure(ctx, lastError);
         const criticalWaitTime = 10000 + Math.random() * 5000;
-        ctx.log(
-          "info",
+        logInfo(
           `Waiting ${Math.round(criticalWaitTime / 1000)} seconds after critical error recovery...`,
         );
         await new Promise((resolve) => setTimeout(resolve, criticalWaitTime));
@@ -509,48 +485,42 @@ export async function retryOperation<T>(
         try {
           captchaDetected = await checkForCaptcha(ctx);
         } catch (captchaCheckError) {
-          ctx.log("warn", `Error checking for CAPTCHA: ${captchaCheckError}`);
+          logWarn(`Error checking for CAPTCHA: ${captchaCheckError}`);
         }
       } else {
-        ctx.log("warn", "Skipping CAPTCHA check as page is invalid.");
+        logWarn("Skipping CAPTCHA check as page is invalid.");
       }
       if (captchaDetected) {
-        ctx.log("error", "CAPTCHA detected! Initiating recovery...");
+        logError("CAPTCHA detected! Initiating recovery...");
         await recoveryProcedure(ctx);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         continue;
       }
       if (isTimeoutError) {
-        ctx.log(
-          "error",
+        logError(
           `Timeout detected during operation (${++consecutiveTimeouts} consecutive), attempting recovery...`,
         );
         await recoveryProcedure(ctx);
         const timeoutWaitTime = Math.min(5000 * consecutiveTimeouts, 30000);
-        ctx.log("info", `Waiting ${timeoutWaitTime / 1000} seconds after timeout...`);
+        logInfo(`Waiting ${timeoutWaitTime / 1000} seconds after timeout...`);
         await new Promise((resolve) => setTimeout(resolve, timeoutWaitTime));
         continue;
       }
       if (isNavigationError) {
-        ctx.log(
-          "error",
+        logError(
           `Navigation error detected (${++consecutiveNavigationErrors} consecutive), attempting recovery...`,
         );
         await recoveryProcedure(ctx);
         const navWaitTime = Math.min(8000 * consecutiveNavigationErrors, 40000);
-        ctx.log("info", `Waiting ${navWaitTime / 1000} seconds after navigation error...`);
+        logInfo(`Waiting ${navWaitTime / 1000} seconds after navigation error...`);
         await new Promise((resolve) => setTimeout(resolve, navWaitTime));
         continue;
       }
       if (isConnectionError || isProtocolError) {
-        ctx.log(
-          "error",
-          "Connection or protocol error detected, attempting recovery with longer wait...",
-        );
+        logError("Connection or protocol error detected, attempting recovery with longer wait...");
         await recoveryProcedure(ctx);
         const connectionWaitTime = 15000 + Math.random() * 10000;
-        ctx.log(
-          "info",
+        logInfo(
           `Waiting ${Math.round(connectionWaitTime / 1000)} seconds after connection error...`,
         );
         await new Promise((resolve) => setTimeout(resolve, connectionWaitTime));
@@ -560,25 +530,23 @@ export async function retryOperation<T>(
       const maxJitter = Math.min(1000 * (i + 1), 10000);
       const jitter = Math.random() * maxJitter;
       const delay = baseDelay + jitter;
-      ctx.log(
-        "info",
+      logInfo(
         `Retrying in ${Math.round(delay / 1000)} seconds (base: ${Math.round(baseDelay / 1000)}s, jitter: ${Math.round(jitter / 1000)}s)...`,
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
       try {
-        ctx.log("info", "Attempting to re-navigate to Perplexity...");
+        logInfo("Attempting to re-navigate to Perplexity...");
         await navigateToPerplexity(ctx);
-        ctx.log("info", "Re-navigation successful");
+        logInfo("Re-navigation successful");
       } catch (navError) {
-        ctx.log("error", `Navigation failed during retry: ${navError}`);
+        logError(`Navigation failed during retry: ${navError}`);
         const navFailWaitTime = 10000 + Math.random() * 5000;
-        ctx.log(
-          "info",
+        logInfo(
           `Navigation failed, waiting ${Math.round(navFailWaitTime / 1000)} seconds before next attempt...`,
         );
         await new Promise((resolve) => setTimeout(resolve, navFailWaitTime));
         if (i > 1) {
-          ctx.log("info", "Multiple navigation failures, attempting full recovery...");
+          logInfo("Multiple navigation failures, attempting full recovery...");
           await recoveryProcedure(ctx);
         }
       }
@@ -587,6 +555,6 @@ export async function retryOperation<T>(
   const errorMessage = lastError
     ? `Operation failed after ${maxRetries} retries. Last error: ${lastError.message}`
     : `Operation failed after ${maxRetries} retries with unknown error`;
-  ctx.log("error", errorMessage);
+  logError(errorMessage);
   throw new Error(errorMessage);
 }
