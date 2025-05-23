@@ -25,7 +25,7 @@ pnpm-lock.yaml
 
 # Local Dev
 memory-bank/*.md
-docs/zeugs/
+docs/zeugs/**
 
 # Coverage
 coverage/lcov-report/

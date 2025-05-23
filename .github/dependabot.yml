@@ -1,43 +1,32 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # For npm (pnpm is fully supported by dependabot since 2023)
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    # Group dev and prod dependencies to reduce PR spam
-    groups:
-      dev-dependencies:
-        dependency-type: "development"
-      prod-dependencies:
-        dependency-type: "production"
-    open-pull-requests-limit: 5
-    # Add helpful labels
-    labels:
-      - "dependencies"
-      - "automated"
-    # Assign reviewer(s) if desired (remove or change as appropriate)
-    reviewers:
-      - "sm-moshi"
-    # Enable security updates
-    allow:
-      - dependency-type: "all"
-    security-updates: true
+# npm dependencies (including pnpm/yarn, if present)
+- package-ecosystem: "npm"
+  directory: "/" # Location of package.json
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 5
+  groups:
+    dev-dependencies:
+      dependency-type: "development"
+    prod-dependencies:
+      dependency-type: "production"
+  labels:
+  - "dependencies"
+  - "automated"
+  reviewers:
+  - "sm-moshi"
+  allow:
+  - dependency-type: "all"
 
-  # For GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "actions"
-      - "automated"
-    reviewers:
-      - "sm-moshi"
-    security-updates: true
+# GitHub Actions dependencies
+- package-ecosystem: "github-actions"
+  directory: "/" # Location of workflow files
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 5
+  labels:
+  - "actions"
+  - "automated"
+  reviewers:
+  - "sm-moshi"
