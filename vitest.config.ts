@@ -5,6 +5,14 @@ export default defineConfig({
     globals: true,
     environment: "node",
     root: "./",
+    // Only include tests from src directory, not compiled build directory
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+    exclude: [
+      "build/**/*", // Explicitly exclude all build directory files
+      "node_modules/**/*",
+      "docs/**/*",
+      "scripts/**/*",
+    ],
     coverage: {
       provider: "v8",
       reportsDirectory: "coverage",

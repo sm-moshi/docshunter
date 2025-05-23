@@ -4,7 +4,7 @@ updates:
 - package-ecosystem: "npm"
   directory: "/" # Location of package.json
   schedule:
-    interval: "weekly"
+    interval: "daily"
   open-pull-requests-limit: 5
   groups:
     dev-dependencies:
@@ -23,7 +23,7 @@ updates:
 - package-ecosystem: "github-actions"
   directory: "/" # Location of workflow files
   schedule:
-    interval: "weekly"
+    interval: "daily"
   open-pull-requests-limit: 5
   labels:
   - "actions"
