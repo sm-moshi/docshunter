@@ -61,6 +61,30 @@ export function analyzeError(error: Error | string): ErrorAnalysis {
 }
 
 /**
+ * Generate non-cryptographic jitter for retry delays
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateRetryJitter(maxJitter: number): number {
+  return Math.random() * maxJitter;
+}
+
+/**
+ * Generate variable delay for connection errors to distribute load
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateConnectionDelay(): number {
+  return 15000 + Math.random() * 10000; // 15-25 seconds
+}
+
+/**
+ * Generate variable delay for detached frame errors
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateDetachedFrameDelay(): number {
+  return 10000 + Math.random() * 5000; // 10-15 seconds
+}
+
+/**
  * Calculate retry delay with exponential backoff and jitter
  */
 export function calculateRetryDelay(
@@ -75,17 +99,17 @@ export function calculateRetryDelay(
   } else if (errorAnalysis.isNavigation) {
     baseDelay = Math.min(8000 * (errorAnalysis.consecutiveNavigationErrors + 1), 40000);
   } else if (errorAnalysis.isConnection) {
-    baseDelay = 15000 + Math.random() * 10000;
+    baseDelay = generateConnectionDelay();
   } else if (errorAnalysis.isDetachedFrame) {
-    baseDelay = 10000 + Math.random() * 5000;
+    baseDelay = generateDetachedFrameDelay();
   } else {
     // Standard exponential backoff
     baseDelay = Math.min(1000 * 2 ** attemptNumber, maxDelay);
   }
 
-  // Add jitter
+  // Add jitter to prevent thundering herd problems
   const maxJitter = Math.min(1000 * (attemptNumber + 1), 10000);
-  const jitter = Math.random() * maxJitter;
+  const jitter = generateRetryJitter(maxJitter);
 
   return baseDelay + jitter;
 }

@@ -436,13 +436,21 @@ export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): P
 }
 
 // Helper functions for retry operation
+/**
+ * Generate critical error recovery delay with jitter
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateCriticalErrorDelay(): number {
+  return 10000 + Math.random() * 5000; // 10-15 seconds
+}
+
 async function handleDetachedFrameError(ctx: PuppeteerContext, error: Error): Promise<void> {
   const errorMsg = error.message;
   logError(
     `Detached frame or protocol error detected ('${errorMsg.substring(0, 100)}...'). Initiating immediate recovery.`,
   );
   await recoveryProcedure(ctx, error);
-  const criticalWaitTime = 10000 + Math.random() * 5000;
+  const criticalWaitTime = generateCriticalErrorDelay();
   logInfo(
     `Waiting ${Math.round(criticalWaitTime / 1000)} seconds after critical error recovery...`,
   );
@@ -496,12 +504,28 @@ async function handleNavigationError(
   await new Promise((resolve) => setTimeout(resolve, navWaitTime));
 }
 
+/**
+ * Generate connection error recovery delay with jitter
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateConnectionErrorDelay(): number {
+  return 15000 + Math.random() * 10000; // 15-25 seconds
+}
+
 async function handleConnectionError(ctx: PuppeteerContext): Promise<void> {
   logError("Connection or protocol error detected, attempting recovery with longer wait...");
   await recoveryProcedure(ctx);
-  const connectionWaitTime = 15000 + Math.random() * 10000;
+  const connectionWaitTime = generateConnectionErrorDelay();
   logInfo(`Waiting ${Math.round(connectionWaitTime / 1000)} seconds after connection error...`);
   await new Promise((resolve) => setTimeout(resolve, connectionWaitTime));
+}
+
+/**
+ * Generate navigation failure delay with jitter
+ * Note: Math.random() is safe here - only used for timing distribution, not security
+ */
+function generateNavigationFailureDelay(): number {
+  return 10000 + Math.random() * 5000; // 10-15 seconds
 }
 
 async function handleRetryNavigation(ctx: PuppeteerContext, attemptNumber: number): Promise<void> {
@@ -511,7 +535,7 @@ async function handleRetryNavigation(ctx: PuppeteerContext, attemptNumber: numbe
     logInfo("Re-navigation successful");
   } catch (navError) {
     logError(`Navigation failed during retry: ${navError}`);
-    const navFailWaitTime = 10000 + Math.random() * 5000;
+    const navFailWaitTime = generateNavigationFailureDelay();
     logInfo(
       `Navigation failed, waiting ${Math.round(navFailWaitTime / 1000)} seconds before next attempt...`,
     );

@@ -41,3 +41,4 @@ coverage/tools/
 coverage/server/
 coverage/schema/
 !coverage/lcov.info
+coverage/coverage-final.json

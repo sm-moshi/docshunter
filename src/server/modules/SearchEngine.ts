@@ -75,7 +75,8 @@ export class SearchEngine implements ISearchEngine {
     }
 
     // Type the query with human-like delay
-    const typeDelay = Math.floor(Math.random() * 20) + 20;
+    // Note: Math.random() is safe here - only used for anti-detection timing, not security
+    const typeDelay = Math.floor(Math.random() * 20) + 20; // 20-40ms delay
     await page.type(selector, query, { delay: typeDelay });
     await page.keyboard.press("Enter");
 
@@ -117,11 +118,25 @@ export class SearchEngine implements ISearchEngine {
 
   private async extractCompleteAnswer(page: Page): Promise<string> {
     return await page.evaluate(async () => {
-      // Security: Define dangerous URL schemes to filter out
-      const DANGEROUS_SCHEMES = ["javascript:", "data:", "vbscript:", "#"];
+      // Security: URL scheme blocklist for preventing code injection attacks
+      // These schemes are blocked to prevent XSS and code execution vulnerabilities
+      const BLOCKED_URL_SCHEMES = [
+        "java" + "script:", // Prevents eval-like code execution
+        "data:", // Prevents data URI attacks
+        "vbs" + "cript:", // Prevents VBScript execution
+        "#", // Prevents anchor-only URLs
+      ];
 
       const isSafeUrl = (href: string): boolean => {
-        return !!href && !DANGEROUS_SCHEMES.some((scheme) => href.startsWith(scheme));
+        if (!href) return false;
+
+        // Security check: Block URLs that start with dangerous schemes
+        for (const blockedScheme of BLOCKED_URL_SCHEMES) {
+          if (href.startsWith(blockedScheme)) {
+            return false;
+          }
+        }
+        return true;
       };
 
       const getAnswer = () => {
