@@ -8,7 +8,7 @@ import { logError, logInfo, logWarn } from "../../utils/logging.js";
 import { CONFIG } from "../config.js";
 
 export class SearchEngine implements ISearchEngine {
-  constructor(private browserManager: IBrowserManager) {}
+  constructor(private readonly browserManager: IBrowserManager) {}
 
   async performSearch(query: string): Promise<string> {
     try {
@@ -153,7 +153,8 @@ export class SearchEngine implements ISearchEngine {
 
         // Combine text and URLs
         if (urls.length > 0) {
-          return `${answerText}\n\nURLs:\n${urls.map((url) => `- ${url}`).join("\n")}`;
+          const formattedUrls = urls.map((url) => `- ${url}`).join("\n");
+          return `${answerText}\n\nURLs:\n${formattedUrls}`;
         }
         return answerText;
       };

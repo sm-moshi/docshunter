@@ -82,7 +82,7 @@ describe("URL and Data Helper Functions", () => {
       ];
 
       for (const contentType of nonHtmlContentTypes) {
-        const isSupported = contentType.includes("html") || contentType.includes("text/plain");
+        const isSupported = contentType.includes("html") ?? contentType.includes("text/plain");
         expect(isSupported).toBe(false);
       }
     });
@@ -98,8 +98,7 @@ describe("URL and Data Helper Functions", () => {
       ];
 
       for (const { text, title, isValid } of testCases) {
-        const meetsMinLength =
-          text.trim().length > (title?.length || 0) && text.trim().length > 100;
+        const meetsMinLength = text.trim().length > (title?.length ?? 0) && text.trim().length > 100;
         expect(meetsMinLength).toBe(isValid);
       }
     });

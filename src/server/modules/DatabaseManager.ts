@@ -14,7 +14,7 @@ export class DatabaseManager implements IDatabaseManager {
   private db: Database.Database | null = null;
   private initialized = false;
 
-  constructor(private customDbPath?: string) {}
+  constructor(private readonly customDbPath?: string) {}
 
   initialize(): void {
     try {

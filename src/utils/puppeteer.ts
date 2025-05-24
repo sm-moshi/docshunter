@@ -76,7 +76,7 @@ async function performInitialNavigation(page: Page): Promise<void> {
       timeout: CONFIG.PAGE_TIMEOUT,
     });
     const isInternalError = await page.evaluate(() => {
-      return document.querySelector("main")?.textContent?.includes("internal error") || false;
+      return document.querySelector("main")?.textContent?.includes("internal error") ?? false;
     });
     if (isInternalError) {
       throw new Error("Perplexity.ai returned internal error page");
@@ -97,7 +97,7 @@ async function performInitialNavigation(page: Page): Promise<void> {
 }
 
 async function validatePageState(page: Page): Promise<void> {
-  if (page.isClosed() || page.mainFrame().isDetached()) {
+  if (page.isClosed() ?? page.mainFrame().isDetached()) {
     logError("Page closed or frame detached immediately after navigation attempt.");
     throw new Error("Frame detached during navigation");
   }
@@ -691,7 +691,7 @@ export function resetIdleTimeout(ctx: PuppeteerContext) {
         ctx.setIsInitializing(false);
       }
     },
-    ctx.IDLE_TIMEOUT_MS || 5 * 60 * 1000,
+    ctx.IDLE_TIMEOUT_MS ?? 5 * 60 * 1000,
   );
   ctx.setIdleTimeout(timeout);
 }

@@ -56,7 +56,7 @@ function extractHtmlContent(
   dom: JSDOM,
   ctx: PuppeteerContext,
 ): { title: string | null; textContent: string } {
-  let title = dom.window.document.title || null;
+  let title = dom.window.document.title ?? null;
   let textContent = "";
 
   // Try Readability first for better content extraction
@@ -65,17 +65,17 @@ function extractHtmlContent(
     const article = reader.parse();
 
     if (article?.textContent && article.textContent.trim().length > 100) {
-      title = article.title || title;
+      title = article.title ?? title;
       textContent = article.textContent.trim();
       ctx?.log?.("info", `Readability extraction successful (${textContent.length} chars)`);
     } else {
       // Fallback to body text extraction
-      textContent = dom.window.document.body?.textContent || "";
+      textContent = dom.window.document.body?.textContent ?? "";
       ctx?.log?.("info", "Readability failed, using body text extraction");
     }
   } catch (readabilityError) {
     ctx?.log?.("warn", `Readability failed: ${readabilityError}, falling back to body text`);
-    textContent = dom.window.document.body?.textContent || "";
+    textContent = dom.window.document.body?.textContent ?? "";
   }
 
   return { title, textContent };
@@ -94,7 +94,7 @@ function extractContent(
   }
 
   // For non-HTML content, just get the text
-  return { title: dom.window.document.title || null, textContent: responseData };
+  return { title: dom.window.document.title ?? null, textContent: responseData };
 }
 
 function processTextContent(
@@ -125,12 +125,12 @@ function formatAxiosError(
   if (axiosError.response?.status) {
     const status = axiosError.response.status;
     if (status >= 400 && status < 500) {
-      return `Client error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+      return `Client error (${status}): ${axiosError.response.statusText ?? "Unknown error"}`;
     }
     if (status >= 500) {
-      return `Server error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+      return `Server error (${status}): ${axiosError.response.statusText ?? "Unknown error"}`;
     }
-    return `HTTP error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+    return `HTTP error (${status}): ${axiosError.response.statusText ?? "Unknown error"}`;
   }
 
   if (axiosError.code) {
@@ -189,7 +189,7 @@ export async function fetchSimpleContent(
   try {
     const response = await performHttpRequest(url, ctx);
 
-    const contentType = response.headers["content-type"] || "";
+    const contentType = response.headers["content-type"] ?? "";
     ctx?.log?.("info", `Content-Type: ${contentType}, Status: ${response.status}`);
 
     const contentTypeError = validateContentType(contentType, ctx);
@@ -205,7 +205,7 @@ export async function fetchSimpleContent(
     const { title, textContent } = extractContent(contentType, response.data, url, ctx);
     const { processedContent, error: processingError } = processTextContent(textContent, ctx);
 
-    if (processingError || !processedContent) {
+    if (processingError ?? !processedContent) {
       return { title, textContent: null, error: processingError };
     }
 

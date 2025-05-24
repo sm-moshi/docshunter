@@ -19,7 +19,7 @@ export class BrowserManager implements IBrowserManager {
   private page: Page | null = null;
   private isInitializing = false;
   private searchInputSelector = 'textarea[placeholder*="Ask"]';
-  private lastSearchTime = 0;
+  private readonly lastSearchTime = 0;
   private idleTimeout: NodeJS.Timeout | null = null;
   private operationCount = 0;
   private readonly IDLE_TIMEOUT_MS = 5 * 60 * 1000;

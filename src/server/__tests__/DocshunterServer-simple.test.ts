@@ -115,7 +115,8 @@ describe("DocshunterServer Utilities", () => {
       // When the line is longer than maxLength, it gets split
       expect(chunks.length).toBeGreaterThanOrEqual(1);
       // The original line should be preserved across chunks
-      const rejoined = chunks.join("").replace(/\n+$/, "");
+      // Security: Use trimEnd() instead of regex to avoid potential backtracking issues
+      const rejoined = chunks.join("").trimEnd();
       expect(rejoined).toBe(singleLine);
     });
   });

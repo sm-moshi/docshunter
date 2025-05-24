@@ -384,7 +384,8 @@ export async function extractSameDomainLinks(
       }
     }
     // Prioritize links with longer text, limit count
-    return resolvedLinks.sort((a, b) => b.text.length - a.text.length).slice(0, 10);
+    resolvedLinks.sort((a, b) => b.text.length - a.text.length);
+    return resolvedLinks.slice(0, 10);
   } catch (error) {
     // On error, return empty array
     return [];
