@@ -79,6 +79,88 @@ pnpm test:run
 - **Integration tests** for tool handlers
 - **Real code testing** preferred over mocks where possible
 - **Edge cases** must be covered
+- **Comprehensive coverage** for critical modules using established patterns
+
+### **Testing Patterns & Best Practices**
+
+Based on our comprehensive testing implementation for SearchEngine.ts and DatabaseManager.ts:
+
+#### **1. Private Method Testing via TypeScript Interfaces**
+
+```typescript
+// Create interface for testing private methods
+interface ModulePrivate {
+  privateMethod(param: Type): Promise<ReturnType>;
+}
+
+// Access private methods with controlled type assertions
+const instance = new Module(dependencies);
+await (instance as unknown as ModulePrivate).privateMethod(param);
+```
+
+#### **2. Vitest Mock Management**
+
+```typescript
+// Use vi.hoisted() for proper mock variable declaration
+const { mockObject, mockConstructor } = vi.hoisted(() => {
+  const mockObject = {
+    method: vi.fn().mockReturnValue(expectedValue),
+  } as unknown as InterfaceType;
+
+  return { mockObject, mockConstructor };
+});
+
+vi.mock("module-name", () => ({
+  default: mockConstructor,
+}));
+```
+
+#### **3. Complete Interface Mocking**
+
+```typescript
+// Ensure mocks implement ALL interface methods
+mockInterface = {
+  method1: vi.fn(),
+  method2: vi.fn(),
+  method3: vi.fn(), // Don't forget any methods to avoid runtime errors
+} as InterfaceType;
+```
+
+#### **4. Error Boundary Testing**
+
+```typescript
+// Test both Error objects and string errors
+it("should handle Error objects", () => {
+  const error = new Error("Operation failed");
+  mockMethod.mockImplementation(() => { throw error; });
+  expect(() => instance.method()).toThrow("Operation failed");
+});
+
+it("should handle string errors", () => {
+  const stringError = "String error message";
+  mockMethod.mockImplementation(() => { throw stringError; });
+  expect(() => instance.method()).toThrow(stringError);
+});
+```
+
+#### **5. State Management & Lifecycle Testing**
+
+```typescript
+// Test complete lifecycle scenarios
+describe("Module Lifecycle", () => {
+  it("should handle initialize → operate → cleanup", () => {
+    expect(manager.isInitialized()).toBe(false);
+
+    manager.initialize();
+    expect(manager.isInitialized()).toBe(true);
+    expect(manager.getState()).toBeTruthy();
+
+    manager.close();
+    expect(manager.isInitialized()).toBe(false);
+    expect(manager.getState()).toBeNull();
+  });
+});
+```
 
 ## Adding New Features
 

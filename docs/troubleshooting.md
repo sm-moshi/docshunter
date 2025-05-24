@@ -44,6 +44,104 @@ node build/main.js
 - **Invalid tool names**: Use underscores (`_`) not dashes (`-`) in tool names
 - **Malformed JSON**: Check all JSON-RPC message formatting
 
+## Testing Issues
+
+### Vitest Mock Failures
+
+**Symptoms**: Tests failing with undefined mock functions or missing methods
+
+**Solutions**:
+
+```typescript
+// Use vi.hoisted() for mock variables in vi.mock()
+const { mockDatabase, mockDatabaseConstructor } = vi.hoisted(() => {
+  const mockDatabase = {
+    close: vi.fn().mockReturnValue(undefined),
+    prepare: vi.fn(),
+    exec: vi.fn(),
+  } as unknown as Database.Database;
+
+  return { mockDatabase, mockDatabaseConstructor };
+});
+
+vi.mock("better-sqlite3", () => ({
+  default: mockDatabaseConstructor,
+}));
+```
+
+**Common Mock Issues**:
+
+- **Incomplete interface mocking**: Ensure all interface methods are mocked
+- **Mock hoisting**: Use `vi.hoisted()` for variables used in `vi.mock()`
+- **State contamination**: Reset mocks in `beforeEach()` hooks
+- **Return value consistency**: Mock return values explicitly
+
+### Private Method Testing Errors
+
+**Symptoms**: TypeScript errors when testing private methods
+
+**Solution**:
+
+```typescript
+// Create interface for private method access
+interface SearchEnginePrivate {
+  executeSearch(page: Page, selector: string, query: string): Promise<void>;
+  extractAnswer(page: Page): Promise<string>;
+}
+
+// Use controlled type assertion
+const searchEngine = new SearchEngine(mockBrowserManager);
+await (searchEngine as unknown as SearchEnginePrivate).executeSearch(page, selector, query);
+```
+
+### Database Mock Issues
+
+**Symptoms**: better-sqlite3 mock errors or state management failures
+
+**Common Fixes**:
+
+```typescript
+// Proper database mock setup
+const mockDb = {
+  close: vi.fn().mockImplementation(() => {
+    // Simulate database close behavior
+    mockDb.prepare = vi.fn().mockImplementation(() => {
+      throw new Error("Database is closed");
+    });
+  }),
+  prepare: vi.fn(),
+  exec: vi.fn(),
+} as unknown as Database.Database;
+
+// Test both Error objects and string errors
+it("should handle Error objects", () => {
+  const error = new Error("Database error");
+  mockMethod.mockImplementation(() => { throw error; });
+  expect(() => method()).toThrow("Database error");
+});
+
+it("should handle string errors", () => {
+  const stringError = "String error";
+  mockMethod.mockImplementation(() => { throw stringError; });
+  expect(() => method()).toThrow(stringError);
+});
+```
+
+### Coverage Reporting Issues
+
+**Symptoms**: Coverage reports not generating or incorrect percentages
+
+**Solutions**:
+
+```bash
+# Verify coverage configuration in vitest.config.ts
+# Ensure v8 provider is configured
+pnpm test:coverage
+
+# Check for excluded files affecting coverage
+# Review coverage thresholds if set
+```
+
 ## Tool Execution Failures
 
 ### Browser Automation Issues
@@ -129,6 +227,27 @@ export const CONFIG = {
 - Verify proper cleanup in error scenarios
 - Monitor disk space for SQLite growth
 
+### Test Performance Issues
+
+**Slow Test Execution**:
+
+```typescript
+// Optimize test performance
+beforeEach(() => {
+  // Reset only necessary mocks
+  vi.clearAllMocks();
+});
+
+// Use describe.concurrent for parallel execution where safe
+describe.concurrent("Database operations", () => {
+  // Independent tests can run in parallel
+});
+
+// Mock external dependencies to avoid real network calls
+vi.mock("axios");
+vi.mock("puppeteer");
+```
+
 ## Development Issues
 
 ### TypeScript Compilation Errors
@@ -203,6 +322,21 @@ NODE_ENV=development node build/main.js
 - Capture network tab for failed requests
 - Look for JavaScript errors on target pages
 
+### Test Debugging
+
+**Vitest Debug Mode**:
+
+```bash
+# Run tests with debug output
+pnpm test --reporter=verbose
+
+# Run specific test file
+pnpm test SearchEngine.test.ts
+
+# Debug specific test case
+pnpm test --t "should handle browser timeout"
+```
+
 ### Reporting Issues
 
 When reporting bugs, include:
@@ -210,14 +344,16 @@ When reporting bugs, include:
 1. **Environment**: Node.js version, OS, Cursor/Claude Desktop version
 2. **Configuration**: Sanitized mcp.json (remove sensitive paths)
 3. **Logs**: Error messages and stack traces
-4. **Reproduction**: Minimal steps to reproduce the issue
-5. **Expected vs Actual**: What should happen vs what actually happens
+4. **Test Output**: If testing related, include test results and coverage
+5. **Reproduction**: Minimal steps to reproduce the issue
+6. **Expected vs Actual**: What should happen vs what actually happens
 
 ### Community Support
 
 - **GitHub Issues**: [Create an issue](https://github.com/sm-moshi/docshunter/issues)
 - **Documentation**: Check other files in `docs/` directory
 - **Best Practices**: Review `docs/best-practices.md`
+- **Testing Guide**: See `docs/testing.md` for comprehensive patterns
 
 ---
-*Last updated: May 23, 2025*
+*Last updated: Sat May 24 04:05:03 CEST 2025*

@@ -20,7 +20,7 @@ logs/
 chat_history.db
 
 # Lock file (User requested)
-# package-lock.json
+package-lock.json
 
 # Local Dev
 memory-bank/
@@ -29,6 +29,15 @@ docs/zeugs/
 .cursor/
 
 # Coverage
-coverage/*
+node_modules/
+coverage/*.css
+coverage/*.js
+coverage/*.png
+coverage/index.html
+coverage/lcov-report/
+coverage/utils/
+coverage/types/
+coverage/tools/
+coverage/server/
+coverage/schema/
 !coverage/lcov.info
-node_modules

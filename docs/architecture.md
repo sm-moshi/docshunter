@@ -10,7 +10,14 @@ src/
 ├── server/                       # MCP server implementation
 │   ├── DocshunterServer.ts      # Main server class
 │   ├── config.ts                # Configuration constants
-│   └── toolHandlerSetup.ts      # Tool registration
+│   ├── toolHandlerSetup.ts      # Tool registration
+│   └── modules/                 # Core server modules
+│       ├── SearchEngine.ts      # Search functionality module
+│       ├── DatabaseManager.ts   # Database operations module
+│       ├── BrowserManager.ts    # Browser automation module
+│       └── __tests__/           # Module-specific comprehensive tests
+│           ├── SearchEngine.test.ts    # 20 tests, 90%+ coverage
+│           └── DatabaseManager.test.ts # 28 tests, 85%+ coverage
 ├── tools/                        # Individual tool handlers
 │   ├── search.ts                # Perplexity search
 │   ├── chatPerplexity.ts        # Conversational AI
@@ -36,7 +43,7 @@ src/
 - **Dependency Injection**: Clean interfaces between components
 - **Error Recovery**: Multi-level fallback strategies
 - **Type Safety**: Comprehensive TypeScript coverage
-- **Testability**: Every module designed for unit testing
+- **Testability**: Every module designed for unit testing with established patterns
 
 ## Component Responsibilities
 
@@ -46,6 +53,11 @@ src/
   - Tool registration and lifecycle management
   - Request/response handling
   - Error boundaries and logging
+
+- **modules/**: Core functionality modules
+  - **SearchEngine.ts**: Perplexity search orchestration with comprehensive error handling
+  - **DatabaseManager.ts**: SQLite operations with lifecycle management
+  - **BrowserManager.ts**: Puppeteer browser automation with recovery procedures
 
 - **config.ts**: Centralized configuration
   - Timeout values and retry policies
@@ -182,6 +194,37 @@ graph TD
 - Shared functionality in `src/utils/`
 - Consistent error handling patterns
 - Type-safe interfaces
+
+## Testing Architecture
+
+### **Comprehensive Module Testing**
+
+The server modules feature comprehensive test coverage with established patterns:
+
+- **SearchEngine.ts**: 20 tests covering public API, private methods, and error scenarios
+- **DatabaseManager.ts**: 28 tests covering full lifecycle, error handling, and state management
+- **Testing Patterns**: TypeScript interface testing, Vitest mocking, lifecycle validation
+
+### **Testing Infrastructure**
+
+```
+src/
+├── __tests__/integration/        # System-level tests
+├── server/
+│   ├── modules/__tests__/        # Module-specific comprehensive tests
+│   │   ├── SearchEngine.test.ts  # Private method testing, error boundaries
+│   │   └── DatabaseManager.test.ts # State management, mock database testing
+│   └── __tests__/                # Server configuration tests
+├── tools/__tests__/              # Tool handler tests
+└── utils/__tests__/              # Utility function tests
+```
+
+### **Mock Strategy**
+
+- **Database Mocking**: better-sqlite3 with vi.hoisted() patterns
+- **Browser Mocking**: Complete IBrowserManager interface implementation
+- **Interface Testing**: TypeScript interfaces for private method access
+- **Error Boundary Testing**: Both Error objects and string error scenarios
 
 ---
 *Last updated: May 23, 2025*

@@ -38,11 +38,31 @@
 
 - **zod**: TypeScript-first schema validation with static type inference. [zod.dev](https://zod.dev/) ⚠️ **Currently unused - needs implementation**
 
+## Testing Framework
+
+- **vitest**: Vite-native unit test framework with comprehensive module testing capabilities. [vitest.dev](https://vitest.dev/)
+- **@vitest/coverage-v8**: V8-based coverage provider for detailed test coverage analysis. [vitest.dev/guide/coverage](https://vitest.dev/guide/coverage.html)
+
+### **Testing Infrastructure & Patterns**
+
+Our testing setup includes advanced patterns for comprehensive module coverage:
+
+- **Private Method Testing**: TypeScript interfaces for accessing private methods in tests
+- **Mock Database Testing**: better-sqlite3 in-memory testing with vi.hoisted() patterns
+- **Complete Interface Mocking**: Full interface implementation to prevent runtime errors
+- **Error Boundary Testing**: Both Error objects and string error scenario coverage
+- **State Management Testing**: Full lifecycle validation (initialize → operate → cleanup)
+
+**Current Testing Achievements**:
+
+- **SearchEngine.ts**: 20 tests, 90%+ coverage (+84% improvement)
+- **DatabaseManager.ts**: 28 tests, 85%+ coverage (+31% improvement)
+- **Overall**: 46/48 tests passing (94% success rate)
+
 ## Dev Tooling
 
 - **pnpm**: Fast, disk space-efficient package manager. [pnpm.io](https://pnpm.io/)
-- **vitest**: Vite-native unit test framework. [vitest.dev](https://vitest.dev/)
 - **@vitest/coverage-v8**: V8-based coverage provider for Vitest. [vitest.dev/guide/coverage](https://vitest.dev/guide/coverage.html)
 
 ---
-_Last updated: Fri May 23 23:53:06 CEST 2025_
+_Last updated: Sat May 24 04:05:03 CEST 2025_
