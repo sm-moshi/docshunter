@@ -144,6 +144,86 @@ export class SearchEngine implements ISearchEngine {
         return answerText;
       };
 
+      const checkStabilityBreakCondition = (
+        currentLength: number,
+        stabilityCounter: number,
+      ): boolean => {
+        if (currentLength > 1000 && stabilityCounter >= 3) {
+          console.error("Long answer stabilized, exiting early");
+          return true;
+        }
+        if (currentLength > 500 && stabilityCounter >= 4) {
+          console.error("Medium answer stabilized, exiting");
+          return true;
+        }
+        if (stabilityCounter >= 5) {
+          console.error("Short answer stabilized, exiting");
+          return true;
+        }
+        return false;
+      };
+
+      const updateCounters = (
+        currentAnswer: string,
+        currentLength: number,
+        lastAnswer: string,
+        lastLength: number,
+        stabilityCounter: number,
+        noChangeCounter: number,
+      ) => {
+        if (currentLength > lastLength) {
+          return {
+            newLastLength: currentLength,
+            newStabilityCounter: 0,
+            newNoChangeCounter: 0,
+          };
+        }
+
+        if (currentAnswer === lastAnswer) {
+          return {
+            newLastLength: lastLength,
+            newStabilityCounter: stabilityCounter + 1,
+            newNoChangeCounter: noChangeCounter + 1,
+          };
+        }
+
+        return {
+          newLastLength: lastLength,
+          newStabilityCounter: 0,
+          newNoChangeCounter: noChangeCounter + 1,
+        };
+      };
+
+      const checkCompletionIndicators = (): boolean => {
+        const lastProse = document.querySelector(".prose:last-child");
+        return (
+          (lastProse?.textContent?.includes(".") ||
+            lastProse?.textContent?.includes("?") ||
+            lastProse?.textContent?.includes("!")) ??
+          false
+        );
+      };
+
+      const shouldExitEarly = (noChangeCounter: number, currentLength: number): boolean => {
+        if (noChangeCounter >= 10 && currentLength > 200) {
+          console.error("Content stopped growing but has sufficient information");
+          return true;
+        }
+        return false;
+      };
+
+      const shouldExitOnCompletion = (
+        isComplete: boolean,
+        stabilityCounter: number,
+        currentLength: number,
+      ): boolean => {
+        if (isComplete && stabilityCounter >= 2 && currentLength > 100) {
+          console.error("Completion indicators found, exiting");
+          return true;
+        }
+        return false;
+      };
+
       let lastAnswer = "";
       let lastLength = 0;
       let stabilityCounter = 0;
@@ -157,46 +237,32 @@ export class SearchEngine implements ISearchEngine {
         const currentLength = currentAnswer.length;
 
         if (currentLength > 0) {
-          if (currentLength > lastLength) {
-            lastLength = currentLength;
-            stabilityCounter = 0;
-            noChangeCounter = 0;
-          } else if (currentAnswer === lastAnswer) {
-            stabilityCounter++;
-            noChangeCounter++;
+          const counters = updateCounters(
+            currentAnswer,
+            currentLength,
+            lastAnswer,
+            lastLength,
+            stabilityCounter,
+            noChangeCounter,
+          );
 
-            if (currentLength > 1000 && stabilityCounter >= 3) {
-              console.error("Long answer stabilized, exiting early");
-              break;
-            }
-            if (currentLength > 500 && stabilityCounter >= 4) {
-              console.error("Medium answer stabilized, exiting");
-              break;
-            }
-            if (stabilityCounter >= 5) {
-              console.error("Short answer stabilized, exiting");
-              break;
-            }
-          } else {
-            noChangeCounter++;
-            stabilityCounter = 0;
-          }
+          lastLength = counters.newLastLength;
+          stabilityCounter = counters.newStabilityCounter;
+          noChangeCounter = counters.newNoChangeCounter;
           lastAnswer = currentAnswer;
 
-          if (noChangeCounter >= 10 && currentLength > 200) {
-            console.error("Content stopped growing but has sufficient information");
+          // Check various exit conditions
+          if (checkStabilityBreakCondition(currentLength, stabilityCounter)) {
+            break;
+          }
+
+          if (shouldExitEarly(noChangeCounter, currentLength)) {
             break;
           }
         }
 
-        const lastProse = document.querySelector(".prose:last-child");
-        const isComplete =
-          lastProse?.textContent?.includes(".") ||
-          lastProse?.textContent?.includes("?") ||
-          lastProse?.textContent?.includes("!");
-
-        if (isComplete && stabilityCounter >= 2 && currentLength > 100) {
-          console.error("Completion indicators found, exiting");
+        const isComplete = checkCompletionIndicators();
+        if (shouldExitOnCompletion(isComplete, stabilityCounter, currentLength)) {
           break;
         }
       }
