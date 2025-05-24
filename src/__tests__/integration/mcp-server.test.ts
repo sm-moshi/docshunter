@@ -1,17 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // Mock external dependencies for integration tests
+const createMockPage = () => ({
+  goto: vi.fn(),
+  content: vi.fn(() => "<html><body>Test content</body></html>"),
+  evaluate: vi.fn(() => "Test content"),
+  close: vi.fn(),
+});
+
+const createMockBrowser = () => ({
+  newPage: vi.fn(() => createMockPage()),
+  close: vi.fn(),
+});
+
 vi.mock("puppeteer", () => ({
   default: {
-    launch: vi.fn(() => ({
-      newPage: vi.fn(() => ({
-        goto: vi.fn(),
-        content: vi.fn(() => "<html><body>Test content</body></html>"),
-        evaluate: vi.fn(() => "Test content"),
-        close: vi.fn(),
-      })),
-      close: vi.fn(),
-    })),
+    launch: vi.fn(() => createMockBrowser()),
   },
 }));
 
@@ -184,8 +188,10 @@ describe("MCP Server Integration Tests", () => {
 
     it("should handle timeouts gracefully", async () => {
       // Test timeout handling
+      const createTimeoutError = () => new Error("Timeout");
+
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Timeout")), 100);
+        setTimeout(() => reject(createTimeoutError()), 100);
       });
 
       try {
