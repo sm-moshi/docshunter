@@ -24,6 +24,8 @@ export type {
 // ─── TOOL & SEARCH TYPES ──────────────────────────────────────────────
 export type {
   ISearchEngine,
+  ToolHandler,
+  ToolHandlersRegistry,
   ChatPerplexityArgs,
   ExtractUrlContentArgs,
   GetDocumentationArgs,

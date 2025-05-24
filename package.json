@@ -9,10 +9,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-
     "test:watch": "vitest --watch",
-    "test:unit": "vitest run src/**/*.test.ts",
-    "test:integration": "vitest run src/__tests__/integration/*.test.ts",
     "lint": "biome lint . --write",
     "format": "biome format . --write",
     "update-docs-date": "node scripts/update-docs-date.js"

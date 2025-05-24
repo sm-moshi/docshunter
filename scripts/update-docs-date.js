@@ -1,6 +1,6 @@
+import { execSync } from "node:child_process";
 // scripts/update-docs-date.js
 import fs from "node:fs";
-import { execSync } from "node:child_process";
 import path from "node:path";
 
 const files = [

@@ -1,14 +1,14 @@
+import { Readability } from "@mozilla/readability";
+import axios from "axios";
 /**
  * Content extraction utilities for Puppeteer-based scraping and recursive exploration.
  */
 import { JSDOM } from "jsdom";
-import { Readability } from "@mozilla/readability";
-import { initializeBrowser } from "./puppeteer.js";
-import { fetchSimpleContent } from "./fetch.js";
-import axios from "axios";
 import type { Page } from "puppeteer";
-import type { PageContentResult, PuppeteerContext } from "../types/index.js";
 import { CONFIG } from "../server/config.js";
+import type { PageContentResult, PuppeteerContext } from "../types/index.js";
+import { fetchSimpleContent } from "./fetch.js";
+import { initializeBrowser } from "./puppeteer.js";
 
 /**
  * Extracts content from a single page using Puppeteer and Readability.

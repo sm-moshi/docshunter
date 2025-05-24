@@ -7,7 +7,7 @@
  * @param recursiveFetch - Function to perform recursive content extraction
  * @returns The extraction result as a JSON string
  */
-import type { PuppeteerContext, PageContentResult } from "../types/index.js";
+import type { PageContentResult, PuppeteerContext } from "../types/index.js";
 
 export default async function extractUrlContent(
   args: { url: string; depth?: number },

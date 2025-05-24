@@ -4,23 +4,17 @@
  */
 
 import crypto from "node:crypto";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   CallToolRequestSchema,
+  ErrorCode,
   ListToolsRequestSchema,
   McpError,
-  ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
-import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 
 import { TOOL_SCHEMAS } from "../schema/toolSchemas.js";
-import { logWarn, logError } from "../utils/logging.js";
-import type { ChatPerplexityArgs } from "../types/index.js";
-
-// Tool handler function type - more flexible to accommodate different argument types
-export type ToolHandler = (args: Record<string, unknown>) => Promise<string>;
-
-// Tool handlers registry type
-export type ToolHandlersRegistry = Record<string, ToolHandler>;
+import type { ChatPerplexityArgs, ToolHandler, ToolHandlersRegistry } from "../types/index.js";
+import { logError, logWarn } from "../utils/logging.js";
 
 /**
  * Sets up MCP tool handlers for the server

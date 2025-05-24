@@ -3,16 +3,16 @@
  * Focused, testable module for browser automation
  */
 import type { Browser, Page } from "puppeteer";
-import type { PuppeteerContext, IBrowserManager } from "../../types/index.js";
+import type { IBrowserManager, PuppeteerContext } from "../../types/index.js";
+import { logError, logInfo, logWarn } from "../../utils/logging.js";
 import {
+  checkForCaptcha,
   initializeBrowser,
   navigateToPerplexity,
-  waitForSearchInput,
-  checkForCaptcha,
   recoveryProcedure,
   resetIdleTimeout,
+  waitForSearchInput,
 } from "../../utils/puppeteer.js";
-import { logInfo, logWarn, logError } from "../../utils/logging.js";
 
 export class BrowserManager implements IBrowserManager {
   private browser: Browser | null = null;

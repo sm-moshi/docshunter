@@ -2,8 +2,8 @@
  * Tool implementation for chat functionality with Perplexity
  */
 
-import type { PuppeteerContext, ChatMessage } from "../types/index.js";
 import crypto from "node:crypto";
+import type { ChatMessage, PuppeteerContext } from "../types/index.js";
 
 /**
  * Handles chat interactions with conversation history

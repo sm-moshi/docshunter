@@ -4,31 +4,27 @@
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupToolHandlers, createToolHandlersRegistry } from "./toolHandlerSetup.js";
-import { BrowserManager } from "./modules/BrowserManager.js";
-import { SearchEngine } from "./modules/SearchEngine.js";
-import { DatabaseManager } from "./modules/DatabaseManager.js";
 import type {
   IBrowserManager,
-  ISearchEngine,
   IDatabaseManager,
+  ISearchEngine,
   ServerDependencies,
 } from "../types/index.js";
-import { logInfo, logWarn, logError } from "../utils/logging.js";
+import { logError, logInfo } from "../utils/logging.js";
+import { BrowserManager } from "./modules/BrowserManager.js";
+import { DatabaseManager } from "./modules/DatabaseManager.js";
+import { SearchEngine } from "./modules/SearchEngine.js";
+import { createToolHandlersRegistry, setupToolHandlers } from "./toolHandlerSetup.js";
 
 // Import modular tool implementations
 import chatPerplexity from "../tools/chatPerplexity.js";
-import getDocumentation from "../tools/getDocumentation.js";
-import findApis from "../tools/findApis.js";
-import checkDeprecatedCode from "../tools/checkDeprecatedCode.js";
-import search from "../tools/search.js";
 import extractUrlContent from "../tools/extractUrlContent.js";
 
 export class DocshunterServer {
-  private server: Server;
-  private browserManager: IBrowserManager;
-  private searchEngine: ISearchEngine;
-  private databaseManager: IDatabaseManager;
+  private readonly server: Server;
+  private readonly browserManager: IBrowserManager;
+  private readonly searchEngine: ISearchEngine;
+  private readonly databaseManager: IDatabaseManager;
 
   constructor(dependencies?: ServerDependencies) {
     try {
@@ -45,9 +41,9 @@ export class DocshunterServer {
       );
 
       // Initialize modules with dependency injection
-      this.databaseManager = dependencies?.databaseManager || new DatabaseManager();
-      this.browserManager = dependencies?.browserManager || new BrowserManager();
-      this.searchEngine = dependencies?.searchEngine || new SearchEngine(this.browserManager);
+      this.databaseManager = dependencies?.databaseManager ?? new DatabaseManager();
+      this.browserManager = dependencies?.browserManager ?? new BrowserManager();
+      this.searchEngine = dependencies?.searchEngine ?? new SearchEngine(this.browserManager);
 
       // Initialize database
       this.databaseManager.initialize();

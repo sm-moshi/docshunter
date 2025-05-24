@@ -1,14 +1,14 @@
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 /**
  * DatabaseManager - Handles all database operations
  * Focused, testable module for SQLite database management
  */
 import Database from "better-sqlite3";
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { initializeDatabase, getChatHistory, saveChatMessage } from "../../utils/db.js";
 import type { ChatMessage, IDatabaseManager } from "../../types/index.js";
-import { logInfo, logWarn, logError } from "../../utils/logging.js";
+import { getChatHistory, initializeDatabase, saveChatMessage } from "../../utils/db.js";
+import { logError, logInfo, logWarn } from "../../utils/logging.js";
 
 export class DatabaseManager implements IDatabaseManager {
   private db: Database.Database | null = null;

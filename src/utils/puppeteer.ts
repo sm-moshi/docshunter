@@ -1,19 +1,19 @@
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
 /**
  * Puppeteer utility functions for browser automation, navigation, and recovery
  */
 import puppeteer, { type Browser, type Page } from "puppeteer";
-import type { PuppeteerContext, RecoveryContext } from "../types/index.js";
 import { CONFIG } from "../server/config.js";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
-import { logInfo, logWarn, logError } from "./logging.js";
+import type { PuppeteerContext, RecoveryContext } from "../types/index.js";
+import { logError, logInfo, logWarn } from "./logging.js";
 import {
-  determineRecoveryLevel,
   analyzeError,
   calculateRetryDelay,
+  determineRecoveryLevel,
   generateBrowserArgs,
-  getSearchInputSelectors,
   getCaptchaSelectors,
+  getSearchInputSelectors,
 } from "./puppeteer-logic.js";
 
 export async function initializeBrowser(ctx: PuppeteerContext) {

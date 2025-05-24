@@ -3,7 +3,7 @@
  * These functions can be tested without mocking Puppeteer
  */
 
-import type { BrowserConfig, RecoveryContext, ErrorAnalysis } from "../types/index.js";
+import type { BrowserConfig, ErrorAnalysis, RecoveryContext } from "../types/index.js";
 
 /**
  * Determine recovery level based on error and context

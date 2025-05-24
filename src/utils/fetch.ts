@@ -5,10 +5,10 @@
  * @returns { title, textContent, error }
  */
 import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
 import axios from "axios";
-import type { PuppeteerContext } from "../types/index.js";
+import { JSDOM } from "jsdom";
 import { CONFIG } from "../server/config.js";
+import type { PuppeteerContext } from "../types/index.js";
 
 export async function fetchSimpleContent(
   url: string,

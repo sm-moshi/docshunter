@@ -4,8 +4,8 @@
  */
 import type { Page } from "puppeteer";
 import type { IBrowserManager, ISearchEngine } from "../../types/index.js";
+import { logError, logInfo, logWarn } from "../../utils/logging.js";
 import { CONFIG } from "../config.js";
-import { logInfo, logWarn, logError } from "../../utils/logging.js";
 
 export class SearchEngine implements ISearchEngine {
   constructor(private browserManager: IBrowserManager) {}
@@ -123,9 +123,18 @@ export class SearchEngine implements ISearchEngine {
 
         // Extract all URLs from the answer
         const links = Array.from(document.querySelectorAll(".prose a[href]"));
+
+        // Security: Define dangerous URL schemes to filter out
+        const DANGEROUS_SCHEMES = ["javascript:", "data:", "vbscript:", "#"];
+
         const urls = links
           .map((link) => (link as HTMLAnchorElement).href)
-          .filter((href) => href && !href.startsWith("javascript:") && !href.startsWith("#"))
+          .filter(
+            (href) =>
+              href &&
+              // Security: Filter out potentially dangerous URL schemes
+              !DANGEROUS_SCHEMES.some((scheme) => href.startsWith(scheme)),
+          )
           .map((href) => href.trim());
 
         // Combine text and URLs
