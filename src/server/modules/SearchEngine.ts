@@ -117,6 +117,13 @@ export class SearchEngine implements ISearchEngine {
 
   private async extractCompleteAnswer(page: Page): Promise<string> {
     return await page.evaluate(async () => {
+      // Security: Define dangerous URL schemes to filter out
+      const DANGEROUS_SCHEMES = ["javascript:", "data:", "vbscript:", "#"];
+
+      const isSafeUrl = (href: string): boolean => {
+        return !!href && !DANGEROUS_SCHEMES.some((scheme) => href.startsWith(scheme));
+      };
+
       const getAnswer = () => {
         const elements = Array.from(document.querySelectorAll(".prose"));
         const answerText = elements.map((el) => (el as HTMLElement).innerText.trim()).join("\n\n");
@@ -124,17 +131,9 @@ export class SearchEngine implements ISearchEngine {
         // Extract all URLs from the answer
         const links = Array.from(document.querySelectorAll(".prose a[href]"));
 
-        // Security: Define dangerous URL schemes to filter out
-        const DANGEROUS_SCHEMES = ["javascript:", "data:", "vbscript:", "#"];
-
         const urls = links
           .map((link) => (link as HTMLAnchorElement).href)
-          .filter(
-            (href) =>
-              href &&
-              // Security: Filter out potentially dangerous URL schemes
-              !DANGEROUS_SCHEMES.some((scheme) => href.startsWith(scheme)),
-          )
+          .filter(isSafeUrl)
           .map((href) => href.trim());
 
         // Combine text and URLs

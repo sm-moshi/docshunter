@@ -69,9 +69,9 @@ async function initializePageIfNeeded(ctx: PuppeteerContext): Promise<Page> {
   let page = ctx.page;
   if (!page || page?.isClosed()) {
     ctx.log("info", "No active page, initializing browser...");
-    await ctx.setPage(null);
-    await ctx.setBrowser(null);
-    await ctx.setIsInitializing(false);
+    ctx.setPage(null);
+    ctx.setBrowser(null);
+    ctx.setIsInitializing(false);
     await initializeBrowser(ctx);
     page = ctx.page;
     if (!page) {
