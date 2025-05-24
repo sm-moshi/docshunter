@@ -33,7 +33,7 @@ vi.mock("node:url", () => ({
 // Use vi.hoisted to create variables that can be used in vi.mock
 const { mockDatabase, mockDatabaseConstructor } = vi.hoisted(() => {
   const mockDatabase = {
-    close: vi.fn().mockReturnValue(undefined),
+    close: vi.fn(),
     prepare: vi.fn(),
     exec: vi.fn(),
   } as unknown as Database.Database;
@@ -86,8 +86,10 @@ describe("DatabaseManager", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Ensure the mock close method doesn't throw
-    vi.mocked(mockDatabase.close).mockReset().mockReturnValue(undefined);
+    // Ensure the mock close method returns this (Database instance)
+    vi.mocked(mockDatabase.close)
+      .mockReset()
+      .mockReturnValue(mockDatabase);
     databaseManager = new DatabaseManager();
   });
 
@@ -109,7 +111,7 @@ describe("DatabaseManager", () => {
       mockJoin.mockReturnValue("/mock/path/to/chat_history.db");
       mockExistsSync.mockReturnValue(true);
       mockDatabaseConstructor.mockReturnValue(mockDatabase);
-      mockInitializeDatabase.mockReturnValue(undefined);
+      mockInitializeDatabase.mockImplementation(() => {});
     });
 
     it("should initialize successfully with existing directory", async () => {
@@ -195,7 +197,7 @@ describe("DatabaseManager", () => {
       mockJoin.mockReturnValue("/mock/path/to/chat_history.db");
       mockExistsSync.mockReturnValue(true);
       mockDatabaseConstructor.mockReturnValue(mockDatabase);
-      mockInitializeDatabase.mockReturnValue(undefined);
+      mockInitializeDatabase.mockImplementation(() => {});
       databaseManager.initialize();
     });
 
@@ -266,7 +268,7 @@ describe("DatabaseManager", () => {
       mockJoin.mockReturnValue("/mock/path/to/chat_history.db");
       mockExistsSync.mockReturnValue(true);
       mockDatabaseConstructor.mockReturnValue(mockDatabase);
-      mockInitializeDatabase.mockReturnValue(undefined);
+      mockInitializeDatabase.mockImplementation(() => {});
       databaseManager.initialize();
     });
 
