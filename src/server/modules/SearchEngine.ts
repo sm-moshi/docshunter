@@ -1,0 +1,216 @@
+/**
+ * SearchEngine - Handles search operations and answer extraction
+ * Focused, testable module for Perplexity search functionality
+ */
+import type { Page } from "puppeteer";
+import type { IBrowserManager, ISearchEngine } from "../../types/index.js";
+import { CONFIG } from "../config.js";
+import { logInfo, logWarn, logError } from "../../utils/logging.js";
+
+export class SearchEngine implements ISearchEngine {
+  constructor(private browserManager: IBrowserManager) {}
+
+  async performSearch(query: string): Promise<string> {
+    try {
+      // Ensure browser is ready
+      if (!this.browserManager.isReady()) {
+        logInfo("Browser not ready, initializing...");
+        await this.browserManager.initialize();
+      }
+
+      // Navigate to Perplexity
+      await this.browserManager.navigateToPerplexity();
+
+      // Get the page from browser manager
+      const page = this.browserManager.getPage();
+      if (!page) {
+        throw new Error("No active page available");
+      }
+
+      // Wait for search input
+      const selector = await this.browserManager.waitForSearchInput();
+      if (!selector) {
+        throw new Error("Search input not found");
+      }
+
+      // Perform the search
+      await this.executeSearch(page, selector, query);
+
+      // Wait for and extract the answer
+      const answer = await this.waitForCompleteAnswer(page);
+
+      // Reset idle timeout after successful operation
+      this.browserManager.resetIdleTimeout();
+
+      return answer;
+    } catch (error) {
+      logError("Search operation failed:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Attempt recovery
+      await this.browserManager.performRecovery(error instanceof Error ? error : undefined);
+
+      // Return user-friendly error message
+      return this.generateErrorResponse(error);
+    }
+  }
+
+  private async executeSearch(page: Page, selector: string, query: string): Promise<void> {
+    logInfo(`Executing search for: "${query.substring(0, 50)}${query.length > 50 ? "..." : ""}"`);
+
+    // Clear any existing text
+    try {
+      await page.evaluate((sel) => {
+        const input = document.querySelector(sel) as HTMLTextAreaElement;
+        if (input) input.value = "";
+      }, selector);
+
+      await page.click(selector, { clickCount: 3 });
+      await page.keyboard.press("Backspace");
+    } catch (clearError) {
+      logWarn("Error clearing input field:", {
+        error: clearError instanceof Error ? clearError.message : String(clearError),
+      });
+    }
+
+    // Type the query with human-like delay
+    const typeDelay = Math.floor(Math.random() * 20) + 20;
+    await page.type(selector, query, { delay: typeDelay });
+    await page.keyboard.press("Enter");
+
+    logInfo("Search query submitted successfully");
+  }
+
+  private async waitForCompleteAnswer(page: Page): Promise<string> {
+    logInfo("Waiting for search response...");
+
+    // First, wait for any response elements to appear
+    const proseSelectors = [".prose", '[class*="prose"]', '[class*="answer"]', '[class*="result"]'];
+
+    let selectorFound = false;
+    for (const proseSelector of proseSelectors) {
+      try {
+        await page.waitForSelector(proseSelector, {
+          timeout: CONFIG.SELECTOR_TIMEOUT,
+          visible: true,
+        });
+        logInfo(`Found response with selector: ${proseSelector}`);
+        selectorFound = true;
+        break;
+      } catch (selectorError) {
+        logWarn(`Selector ${proseSelector} not found, trying next...`);
+      }
+    }
+
+    if (!selectorFound) {
+      logError("No response selectors found");
+      throw new Error("No response elements found on page");
+    }
+
+    // Now wait for the complete answer using the sophisticated algorithm
+    const answer = await this.extractCompleteAnswer(page);
+    logInfo(`Answer received (${answer.length} characters)`);
+
+    return answer;
+  }
+
+  private async extractCompleteAnswer(page: Page): Promise<string> {
+    return await page.evaluate(async () => {
+      const getAnswer = () => {
+        const elements = Array.from(document.querySelectorAll(".prose"));
+        const answerText = elements.map((el) => (el as HTMLElement).innerText.trim()).join("\n\n");
+
+        // Extract all URLs from the answer
+        const links = Array.from(document.querySelectorAll(".prose a[href]"));
+        const urls = links
+          .map((link) => (link as HTMLAnchorElement).href)
+          .filter((href) => href && !href.startsWith("javascript:") && !href.startsWith("#"))
+          .map((href) => href.trim());
+
+        // Combine text and URLs
+        if (urls.length > 0) {
+          return `${answerText}\n\nURLs:\n${urls.map((url) => `- ${url}`).join("\n")}`;
+        }
+        return answerText;
+      };
+
+      let lastAnswer = "";
+      let lastLength = 0;
+      let stabilityCounter = 0;
+      let noChangeCounter = 0;
+      const maxAttempts = 60;
+      const checkInterval = 600;
+
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((resolve) => setTimeout(resolve, checkInterval));
+        const currentAnswer = getAnswer();
+        const currentLength = currentAnswer.length;
+
+        if (currentLength > 0) {
+          if (currentLength > lastLength) {
+            lastLength = currentLength;
+            stabilityCounter = 0;
+            noChangeCounter = 0;
+          } else if (currentAnswer === lastAnswer) {
+            stabilityCounter++;
+            noChangeCounter++;
+
+            if (currentLength > 1000 && stabilityCounter >= 3) {
+              console.error("Long answer stabilized, exiting early");
+              break;
+            }
+            if (currentLength > 500 && stabilityCounter >= 4) {
+              console.error("Medium answer stabilized, exiting");
+              break;
+            }
+            if (stabilityCounter >= 5) {
+              console.error("Short answer stabilized, exiting");
+              break;
+            }
+          } else {
+            noChangeCounter++;
+            stabilityCounter = 0;
+          }
+          lastAnswer = currentAnswer;
+
+          if (noChangeCounter >= 10 && currentLength > 200) {
+            console.error("Content stopped growing but has sufficient information");
+            break;
+          }
+        }
+
+        const lastProse = document.querySelector(".prose:last-child");
+        const isComplete =
+          lastProse?.textContent?.includes(".") ||
+          lastProse?.textContent?.includes("?") ||
+          lastProse?.textContent?.includes("!");
+
+        if (isComplete && stabilityCounter >= 2 && currentLength > 100) {
+          console.error("Completion indicators found, exiting");
+          break;
+        }
+      }
+
+      return lastAnswer || "No answer content found. The website may be experiencing issues.";
+    });
+  }
+
+  private generateErrorResponse(error: unknown): string {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes("timeout") || errorMessage.includes("Timed out")) {
+      return "The search operation is taking longer than expected. This might be due to high server load. Please try again with a more specific query.";
+    }
+
+    if (errorMessage.includes("navigation") || errorMessage.includes("Navigation")) {
+      return "The search operation encountered a navigation issue. This might be due to network connectivity problems. Please try again later.";
+    }
+
+    if (errorMessage.includes("detached") || errorMessage.includes("Detached")) {
+      return "The search operation encountered a technical issue. Please try again with a more specific query.";
+    }
+
+    return `The search operation could not be completed. Error: ${errorMessage}. Please try again later with a more specific query.`;
+  }
+}

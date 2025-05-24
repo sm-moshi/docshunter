@@ -2,11 +2,19 @@
  * Puppeteer utility functions for browser automation, navigation, and recovery
  */
 import puppeteer, { type Browser, type Page } from "puppeteer";
-import type { PuppeteerContext } from "../types/index.js";
+import type { PuppeteerContext, RecoveryContext } from "../types/index.js";
 import { CONFIG } from "../server/config.js";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import { logInfo, logWarn, logError } from "./logging.js";
+import {
+  determineRecoveryLevel,
+  analyzeError,
+  calculateRetryDelay,
+  generateBrowserArgs,
+  getSearchInputSelectors,
+  getCaptchaSelectors,
+} from "./puppeteer-logic.js";
 
 export async function initializeBrowser(ctx: PuppeteerContext) {
   if (ctx.isInitializing) {
@@ -20,51 +28,7 @@ export async function initializeBrowser(ctx: PuppeteerContext) {
     }
     const browser = await puppeteer.launch({
       headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-blink-features=AutomationControlled",
-        "--window-size=1920,1080",
-        "--disable-accelerated-2d-canvas",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--disable-blink-features=AutomationControlled",
-        "--disable-infobars",
-        "--disable-notifications",
-        "--disable-popup-blocking",
-        "--disable-default-apps",
-        "--disable-extensions",
-        "--disable-translate",
-        "--disable-sync",
-        "--disable-background-networking",
-        "--disable-client-side-phishing-detection",
-        "--disable-component-update",
-        "--disable-hang-monitor",
-        "--disable-prompt-on-repost",
-        "--disable-domain-reliability",
-        "--disable-renderer-backgrounding",
-        "--disable-background-timer-throttling",
-        "--disable-backgrounding-occluded-windows",
-        "--disable-breakpad",
-        "--disable-component-extensions-with-background-pages",
-        "--disable-ipc-flooding-protection",
-        "--disable-back-forward-cache",
-        "--disable-partial-raster",
-        "--disable-skia-runtime-opts",
-        "--disable-smooth-scrolling",
-        "--disable-features=site-per-process,TranslateUI,BlinkGenPropertyTrees",
-        "--enable-features=NetworkService,NetworkServiceInProcess",
-        "--force-color-profile=srgb",
-        "--metrics-recording-only",
-        "--mute-audio",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--remote-debugging-port=0",
-        "--use-mock-keychain",
-        `--user-agent=${CONFIG.USER_AGENT}`,
-      ],
+      args: generateBrowserArgs(CONFIG.USER_AGENT),
     });
     ctx.setBrowser(browser);
     const page = await browser.newPage();
@@ -83,6 +47,7 @@ export async function initializeBrowser(ctx: PuppeteerContext) {
     logInfo("Browser initialized successfully, skipping navigation in initialization");
     // Don't navigate to Perplexity during initialization - let individual tools handle navigation
     // await navigateToPerplexity(ctx);
+    // TODO: Why is the navigateToPerplexity commented out?
   } catch (error) {
     logError(`Browser initialization failed: ${error}`);
     if (ctx.browser) {
@@ -269,14 +234,7 @@ export async function waitForSearchInput(
 ): Promise<string | null> {
   const { page, setSearchInputSelector } = ctx;
   if (!page) return null;
-  const possibleSelectors = [
-    'textarea[placeholder*="Ask"]',
-    'textarea[placeholder*="Search"]',
-    "textarea.w-full",
-    'textarea[rows="1"]',
-    '[role="textbox"]',
-    "textarea",
-  ];
+  const possibleSelectors = getSearchInputSelectors();
   for (const selector of possibleSelectors) {
     try {
       const element = await page.waitForSelector(selector, {
@@ -306,22 +264,22 @@ export async function waitForSearchInput(
 export async function checkForCaptcha(ctx: PuppeteerContext): Promise<boolean> {
   const { page } = ctx;
   if (!page) return false;
-  const captchaIndicators = [
-    '[class*="captcha"]',
-    '[id*="captcha"]',
-    'iframe[src*="captcha"]',
-    'iframe[src*="recaptcha"]',
-    'iframe[src*="turnstile"]',
-    "#challenge-running",
-    "#challenge-form",
-  ];
+  const captchaIndicators = getCaptchaSelectors();
   return await page.evaluate((selectors) => {
     return selectors.some((selector) => !!document.querySelector(selector));
   }, captchaIndicators);
 }
 
 export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): Promise<void> {
-  let recoveryLevel = ctx.determineRecoveryLevel ? ctx.determineRecoveryLevel(error) : 3;
+  // Create recovery context for analysis
+  const recoveryContext: RecoveryContext = {
+    hasValidPage: !!(ctx.page && !ctx.page.isClosed() && !ctx.page.mainFrame()?.isDetached()),
+    hasBrowser: !!ctx.browser,
+    isBrowserConnected: !!ctx.browser?.isConnected(),
+    operationCount: ctx.operationCount,
+  };
+
+  let recoveryLevel = determineRecoveryLevel(error, recoveryContext);
   const opId = ctx.incrementOperationCount();
 
   logInfo("Starting recovery procedure");
@@ -470,20 +428,12 @@ export async function retryOperation<T>(
         logError(`Maximum retry attempts (${maxRetries}) reached. Giving up.`);
         break;
       }
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      const isTimeoutError = errorMsg.includes("timeout") || errorMsg.includes("Timed out");
-      const isNavigationError = errorMsg.includes("navigation") || errorMsg.includes("Navigation");
-      const isConnectionError =
-        errorMsg.includes("net::") ||
-        errorMsg.includes("connection") ||
-        errorMsg.includes("network");
-      const isProtocolError = errorMsg.includes("protocol error");
-      const isDetachedFrameError =
-        errorMsg.includes("frame") ||
-        errorMsg.includes("detached") ||
-        errorMsg.includes("session closed") ||
-        errorMsg.includes("target closed");
-      if (isDetachedFrameError || isProtocolError) {
+      // Analyze the error using extracted logic
+      const errorAnalysis = analyzeError(lastError);
+      errorAnalysis.consecutiveTimeouts = consecutiveTimeouts;
+      errorAnalysis.consecutiveNavigationErrors = consecutiveNavigationErrors;
+      if (errorAnalysis.isDetachedFrame) {
+        const errorMsg = lastError.message;
         logError(
           `Detached frame or protocol error detected ('${errorMsg.substring(0, 100)}...'). Initiating immediate recovery.`,
         );
@@ -511,7 +461,7 @@ export async function retryOperation<T>(
         await new Promise((resolve) => setTimeout(resolve, 3000));
         continue;
       }
-      if (isTimeoutError) {
+      if (errorAnalysis.isTimeout) {
         logError(
           `Timeout detected during operation (${++consecutiveTimeouts} consecutive), attempting recovery...`,
         );
@@ -521,7 +471,7 @@ export async function retryOperation<T>(
         await new Promise((resolve) => setTimeout(resolve, timeoutWaitTime));
         continue;
       }
-      if (isNavigationError) {
+      if (errorAnalysis.isNavigation) {
         logError(
           `Navigation error detected (${++consecutiveNavigationErrors} consecutive), attempting recovery...`,
         );
@@ -531,7 +481,7 @@ export async function retryOperation<T>(
         await new Promise((resolve) => setTimeout(resolve, navWaitTime));
         continue;
       }
-      if (isConnectionError || isProtocolError) {
+      if (errorAnalysis.isConnection) {
         logError("Connection or protocol error detected, attempting recovery with longer wait...");
         await recoveryProcedure(ctx);
         const connectionWaitTime = 15000 + Math.random() * 10000;
@@ -541,13 +491,8 @@ export async function retryOperation<T>(
         await new Promise((resolve) => setTimeout(resolve, connectionWaitTime));
         continue;
       }
-      const baseDelay = Math.min(1000 * 2 ** i, 30000);
-      const maxJitter = Math.min(1000 * (i + 1), 10000);
-      const jitter = Math.random() * maxJitter;
-      const delay = baseDelay + jitter;
-      logInfo(
-        `Retrying in ${Math.round(delay / 1000)} seconds (base: ${Math.round(baseDelay / 1000)}s, jitter: ${Math.round(jitter / 1000)}s)...`,
-      );
+      const delay = calculateRetryDelay(i, errorAnalysis);
+      logInfo(`Retrying in ${Math.round(delay / 1000)} seconds...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
       try {
         logInfo("Attempting to re-navigate to Perplexity...");
