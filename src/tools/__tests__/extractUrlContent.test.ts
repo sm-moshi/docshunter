@@ -153,7 +153,8 @@ describe("Extract URL Content Tool", () => {
       ];
 
       for (const url of githubUrls) {
-        expect(url.includes("github.com")).toBe(true);
+        const parsedUrl = new URL(url);
+        expect(parsedUrl.host).toBe("github.com");
       }
     });
 
@@ -165,7 +166,8 @@ describe("Extract URL Content Tool", () => {
       ];
 
       for (const url of nonGithubUrls) {
-        expect(url.includes("github.com")).toBe(false);
+        const parsedUrl = new URL(url);
+        expect(parsedUrl.host).not.toBe("github.com");
       }
     });
   });
