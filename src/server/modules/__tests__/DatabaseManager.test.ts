@@ -87,9 +87,7 @@ describe("DatabaseManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Ensure the mock close method returns this (Database instance)
-    vi.mocked(mockDatabase.close)
-      .mockReset()
-      .mockReturnValue(mockDatabase);
+    vi.mocked(mockDatabase.close).mockReset().mockReturnValue(mockDatabase);
     databaseManager = new DatabaseManager();
   });
 
