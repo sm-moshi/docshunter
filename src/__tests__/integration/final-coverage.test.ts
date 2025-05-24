@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 // Import more utility functions to increase coverage
 import { CONFIG } from "../../server/config";

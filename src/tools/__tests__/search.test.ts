@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import search from "../search.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PuppeteerContext } from "../../types/index.js";
+import search from "../search.js";
 
 // Mock the dependencies before importing the module
 vi.mock("puppeteer", () => ({

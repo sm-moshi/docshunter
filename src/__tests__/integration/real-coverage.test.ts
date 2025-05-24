@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-// Import actual utility functions to test
-import { initializeDatabase, getChatHistory, saveChatMessage } from "../../utils/db";
-import { logInfo, logWarn, logError } from "../../utils/logging";
 import { CONFIG } from "../../server/config";
 import type { ChatMessage } from "../../types/index";
+// Import actual utility functions to test
+import { getChatHistory, initializeDatabase, saveChatMessage } from "../../utils/db";
+import { logError, logInfo, logWarn } from "../../utils/logging";
 
 describe("Real Integration Tests for Code Coverage", () => {
   const testDbPath = join(__dirname, "test-coverage.db");

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import chatPerplexity from "../chatPerplexity.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PuppeteerContext } from "../../types/index.js";
+import chatPerplexity from "../chatPerplexity.js";
 
 describe("chatPerplexity tool", () => {
   let mockContext: PuppeteerContext;

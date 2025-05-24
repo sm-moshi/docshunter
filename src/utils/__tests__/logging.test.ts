@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { log, logInfo, logWarn, logError, type LogLevel } from "../logging";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type LogLevel, log, logError, logInfo, logWarn } from "../logging";
 
 describe("Logging Utility", () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
