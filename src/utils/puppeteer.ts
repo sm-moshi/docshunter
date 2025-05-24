@@ -351,28 +351,36 @@ async function performNewPageCreation(ctx: PuppeteerContext): Promise<number> {
   }
 }
 
+// Helper functions for browser restart
+async function cleanupPage(ctx: PuppeteerContext): Promise<void> {
+  if (!ctx.page) return;
+
+  try {
+    if (!ctx.page.isClosed()) await ctx.page.close();
+  } catch (closeError) {
+    logWarn(
+      `Ignoring error closing page during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
+    );
+  }
+}
+
+async function cleanupBrowser(ctx: PuppeteerContext): Promise<void> {
+  if (!ctx.browser) return;
+
+  try {
+    if (ctx.browser.isConnected()) await ctx.browser.close();
+  } catch (closeError) {
+    logWarn(
+      `Ignoring error closing browser during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
+    );
+  }
+}
+
 async function performFullBrowserRestart(ctx: PuppeteerContext): Promise<void> {
   logInfo("Performing full browser restart (Recovery Level 3)");
 
-  if (ctx.page) {
-    try {
-      if (!ctx.page?.isClosed()) await ctx.page.close();
-    } catch (closeError) {
-      logWarn(
-        `Ignoring error closing page during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
-      );
-    }
-  }
-
-  if (ctx.browser) {
-    try {
-      if (ctx.browser.isConnected()) await ctx.browser.close();
-    } catch (closeError) {
-      logWarn(
-        `Ignoring error closing browser during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
-      );
-    }
-  }
+  await cleanupPage(ctx);
+  await cleanupBrowser(ctx);
 
   ctx.setPage(null);
   ctx.setBrowser(null);

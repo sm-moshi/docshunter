@@ -10,6 +10,258 @@ import type { PageContentResult, PuppeteerContext } from "../types/index.js";
 import { fetchSimpleContent } from "./fetch.js";
 import { initializeBrowser } from "./puppeteer.js";
 
+// Helper functions for content extraction
+function detectAndRewriteGitHubUrl(
+  originalUrl: string,
+  ctx: PuppeteerContext,
+): { extractionUrl: string; isGitHubRepo: boolean } {
+  try {
+    const parsedUrl = new URL(originalUrl);
+    if (parsedUrl.hostname === "github.com") {
+      const pathParts = parsedUrl.pathname.split("/").filter((part) => part.length > 0);
+      if (pathParts.length === 2) {
+        const gitingestUrl = `https://gitingest.com${parsedUrl.pathname}`;
+        ctx.log("info", `Detected GitHub repo URL. Rewriting to: ${gitingestUrl}`);
+        return { extractionUrl: gitingestUrl, isGitHubRepo: true };
+      }
+    }
+  } catch (urlParseError) {
+    ctx.log("warn", `Failed to parse URL for GitHub check: ${urlParseError}`);
+  }
+  return { extractionUrl: originalUrl, isGitHubRepo: false };
+}
+
+async function performContentTypeCheck(
+  extractionUrl: string,
+  isGitHubRepo: boolean,
+  originalUrl: string,
+  ctx: PuppeteerContext,
+): Promise<PageContentResult | null> {
+  if (isGitHubRepo) {
+    return null; // Skip content type check for GitHub repos
+  }
+
+  try {
+    ctx.log("info", `Performing HEAD request for ${extractionUrl}...`);
+    const headResponse = await axios.head(extractionUrl, {
+      timeout: 10000,
+      headers: { "User-Agent": CONFIG.USER_AGENT },
+    });
+    const contentType = headResponse.headers["content-type"];
+    ctx.log("info", `Content-Type: ${contentType}`);
+
+    if (contentType && !contentType.includes("html") && !contentType.includes("text/plain")) {
+      const errorMsg = `Unsupported content type: ${contentType}`;
+      ctx.log("error", errorMsg);
+      return { url: originalUrl, error: errorMsg };
+    }
+  } catch (headError) {
+    ctx.log(
+      "warn",
+      `HEAD request failed for ${extractionUrl}: ${headError instanceof Error ? headError.message : String(headError)}. Proceeding with Puppeteer.`,
+    );
+  }
+
+  return null;
+}
+
+async function initializePageIfNeeded(ctx: PuppeteerContext): Promise<Page> {
+  let page = ctx.page;
+  if (!page || page?.isClosed()) {
+    ctx.log("info", "No active page, initializing browser...");
+    await ctx.setPage(null);
+    await ctx.setBrowser(null);
+    await ctx.setIsInitializing(false);
+    await initializeBrowser(ctx);
+    page = ctx.page;
+    if (!page) {
+      throw new Error("Failed to initialize Puppeteer page");
+    }
+  }
+  return page;
+}
+
+async function navigateToUrl(
+  page: Page,
+  extractionUrl: string,
+  originalUrl: string,
+  ctx: PuppeteerContext,
+): Promise<{ pageTitle: string; error?: PageContentResult }> {
+  ctx.log("info", `Navigating to ${extractionUrl} for extraction...`);
+  const response = await page.goto(extractionUrl, {
+    waitUntil: "domcontentloaded",
+    timeout: CONFIG.TIMEOUT_PROFILES.navigation,
+  });
+  const pageTitle = await page.title();
+
+  if (response && !response.ok()) {
+    const statusCode = response.status();
+    const errorMsg = `HTTP error ${statusCode} received when accessing URL: ${extractionUrl}`;
+    ctx.log("error", errorMsg);
+    return { pageTitle, error: { url: originalUrl, error: errorMsg } };
+  }
+
+  return { pageTitle };
+}
+
+async function waitForGitHubContent(
+  page: Page,
+  isGitHubRepo: boolean,
+  ctx: PuppeteerContext,
+): Promise<void> {
+  if (!isGitHubRepo) return;
+
+  ctx.log("info", "Waiting for gitingest content selector (.result-text)...");
+  try {
+    await page.waitForSelector(".result-text", {
+      timeout: CONFIG.TIMEOUT_PROFILES.content,
+    });
+    ctx.log("info", "Gitingest content selector found.");
+  } catch (waitError) {
+    ctx.log("warn", `Timeout waiting for gitingest selector: ${waitError}. Proceeding anyway.`);
+  }
+}
+
+async function extractGitHubContent(
+  page: Page,
+  isGitHubRepo: boolean,
+  originalUrl: string,
+  pageTitle: string,
+  ctx: PuppeteerContext,
+): Promise<PageContentResult | null> {
+  if (!isGitHubRepo) return null;
+
+  const gitingestContent = await page.evaluate(() => {
+    const resultTextArea = document.querySelector(".result-text") as HTMLTextAreaElement | null;
+    return resultTextArea ? resultTextArea.value : null;
+  });
+
+  if (gitingestContent && gitingestContent.trim().length > 0) {
+    ctx.log("info", `Gitingest specific extraction successful (${gitingestContent.length} chars)`);
+    return {
+      url: originalUrl,
+      title: pageTitle,
+      textContent: gitingestContent.trim(),
+      error: null,
+    };
+  }
+
+  ctx.log("warn", "Gitingest specific extraction failed. Falling back to Readability.");
+  return null;
+}
+
+function extractGeneralContent(
+  dom: JSDOM,
+  originalUrl: string,
+  pageTitle: string,
+  ctx: PuppeteerContext,
+): PageContentResult | null {
+  const reader = new Readability(dom.window.document);
+  const article = reader.parse();
+
+  if (article?.textContent && article.textContent.trim().length > (article.title?.length || 0)) {
+    ctx.log("info", `Readability extracted content (${article.textContent.length} chars)`);
+    return {
+      url: originalUrl,
+      title: article.title || pageTitle,
+      textContent: article.textContent.trim(),
+      error: null,
+    };
+  }
+
+  return null;
+}
+
+async function extractFallbackContent(
+  page: Page,
+  originalUrl: string,
+  pageTitle: string,
+  ctx: PuppeteerContext,
+): Promise<PageContentResult | null> {
+  ctx.log("warn", "Readability failed. Attempting sophisticated fallback selectors...");
+
+  const fallbackResult = await page.evaluate(() => {
+    const selectors = [
+      "article",
+      "main",
+      '[role="main"]',
+      "#content",
+      ".content",
+      "#main",
+      ".main",
+      "#article-body",
+      ".article-body",
+      ".post-content",
+      ".entry-content",
+    ];
+
+    for (const selector of selectors) {
+      const element = document.querySelector(selector) as HTMLElement | null;
+      if (element?.innerText && element.innerText.trim().length > 100) {
+        console.error(`Fallback using selector: ${selector}`);
+        return { text: element.innerText.trim(), selector: selector };
+      }
+    }
+
+    // Advanced body text cleanup
+    const bodyClone = document.body.cloneNode(true) as HTMLElement;
+    const elementsToRemove = bodyClone.querySelectorAll(
+      'nav, header, footer, aside, script, style, noscript, button, form, [role="navigation"], [role="banner"], [role="contentinfo"], [aria-hidden="true"]',
+    );
+
+    for (const el of elementsToRemove) {
+      el.remove();
+    }
+
+    const bodyText = bodyClone.innerText.trim();
+    if (bodyText.length > 200) {
+      console.error("Fallback using filtered body text.");
+      return { text: bodyText, selector: "body (filtered)" };
+    }
+
+    return null;
+  });
+
+  if (fallbackResult) {
+    ctx.log(
+      "info",
+      `Fallback extracted content (${fallbackResult.text.length} chars) using selector: ${fallbackResult.selector}`,
+    );
+    return {
+      url: originalUrl,
+      title: pageTitle,
+      textContent: fallbackResult.text,
+      error: null,
+    };
+  }
+
+  return null;
+}
+
+function formatExtractionError(
+  error: unknown,
+  extractionUrl: string,
+  originalUrl: string,
+): PageContentResult {
+  let errorMessage = `Failed to extract content from ${extractionUrl}.`;
+  let errorReason = "Unknown error";
+
+  if (error instanceof Error) {
+    if (error.message.includes("timeout")) {
+      errorReason = "Navigation or content loading timed out.";
+    } else if (error.message.includes("net::") || error.message.includes("Failed to load")) {
+      errorReason = "Could not resolve or load the URL.";
+    } else if (error.message.includes("extract meaningful content")) {
+      errorReason = "Readability and fallback selectors failed.";
+    } else {
+      errorReason = error.message;
+    }
+  }
+
+  errorMessage += ` Reason: ${errorReason}`;
+  return { url: originalUrl, error: errorMessage };
+}
+
 /**
  * Extracts content from a single page using Puppeteer and Readability.
  * Includes GitHub/Gitingest URL rewriting, content-type pre-checking, and sophisticated fallback extraction.
@@ -19,183 +271,61 @@ export async function fetchSinglePageContent(
   ctx: PuppeteerContext,
 ): Promise<PageContentResult> {
   const originalUrl = url;
-  let extractionUrl = url; // Use a separate variable to avoid reassigning parameter
-  let pageTitle = "";
-  let isGitHubRepo = false;
 
-  // --- GitHub URL Detection & Rewriting ---
-  try {
-    const parsedUrl = new URL(originalUrl);
-    if (parsedUrl.hostname === "github.com") {
-      const pathParts = parsedUrl.pathname.split("/").filter((part) => part.length > 0);
-      if (pathParts.length === 2) {
-        isGitHubRepo = true;
-        const gitingestUrl = `https://gitingest.com${parsedUrl.pathname}`;
-        ctx.log("info", `Detected GitHub repo URL. Rewriting to: ${gitingestUrl}`);
-        extractionUrl = gitingestUrl; // Use the gitingest URL for extraction
-      }
-    }
-  } catch (urlParseError) {
-    ctx.log("warn", `Failed to parse URL for GitHub check: ${urlParseError}`);
-    // Proceed with the original URL if parsing fails
+  // GitHub URL detection and rewriting
+  const { extractionUrl, isGitHubRepo } = detectAndRewriteGitHubUrl(originalUrl, ctx);
+
+  // Content-Type pre-check (skip for GitHub)
+  const contentTypeError = await performContentTypeCheck(
+    extractionUrl,
+    isGitHubRepo,
+    originalUrl,
+    ctx,
+  );
+  if (contentTypeError) {
+    return contentTypeError;
   }
 
-  // --- Content-Type Pre-Check (Skip for GitHub/Gitingest) ---
-  if (!isGitHubRepo) {
-    try {
-      ctx.log("info", `Performing HEAD request for ${extractionUrl}...`);
-      const headResponse = await axios.head(extractionUrl, {
-        timeout: 10000,
-        headers: { "User-Agent": CONFIG.USER_AGENT },
-      });
-      const contentType = headResponse.headers["content-type"];
-      ctx.log("info", `Content-Type: ${contentType}`);
-      if (contentType && !contentType.includes("html") && !contentType.includes("text/plain")) {
-        const errorMsg = `Unsupported content type: ${contentType}`;
-        ctx.log("error", errorMsg);
-        return { url: originalUrl, error: errorMsg };
-      }
-    } catch (headError) {
-      ctx.log(
-        "warn",
-        `HEAD request failed for ${extractionUrl}: ${headError instanceof Error ? headError.message : String(headError)}. Proceeding with Puppeteer.`,
-      );
-    }
-  }
-
-  let page = ctx.page;
   try {
-    if (!page || page?.isClosed()) {
-      ctx.log("info", "No active page, initializing browser...");
-      await ctx.setPage(null);
-      await ctx.setBrowser(null);
-      await ctx.setIsInitializing(false);
-      await initializeBrowser(ctx);
-      page = ctx.page;
-      if (!page) {
-        throw new Error("Failed to initialize Puppeteer page");
-      }
+    // Initialize page if needed
+    const page = await initializePageIfNeeded(ctx);
+
+    // Navigate to URL
+    const navigationResult = await navigateToUrl(page, extractionUrl, originalUrl, ctx);
+    if (navigationResult.error) {
+      return navigationResult.error;
     }
+    const { pageTitle } = navigationResult;
 
-    ctx.log("info", `Navigating to ${extractionUrl} for extraction...`);
-    const response = await page.goto(extractionUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: CONFIG.TIMEOUT_PROFILES.navigation,
-    });
-    pageTitle = await page.title();
+    // Wait for GitHub content if needed
+    await waitForGitHubContent(page, isGitHubRepo, ctx);
 
-    if (response && !response.ok()) {
-      const statusCode = response.status();
-      const errorMsg = `HTTP error ${statusCode} received when accessing URL: ${extractionUrl}`;
-      ctx.log("error", errorMsg);
-      return { url: originalUrl, error: errorMsg };
-    }
-
-    // --- Gitingest Specific Content Loading Wait ---
-    if (isGitHubRepo) {
-      ctx.log("info", "Waiting for gitingest content selector (.result-text)...");
-      try {
-        await page.waitForSelector(".result-text", {
-          timeout: CONFIG.TIMEOUT_PROFILES.content,
-        });
-        ctx.log("info", "Gitingest content selector found.");
-      } catch (waitError) {
-        ctx.log("warn", `Timeout waiting for gitingest selector: ${waitError}. Proceeding anyway.`);
-      }
-    }
-
+    // Get page HTML and create DOM
     const html = await page.content();
     const dom = new JSDOM(html, { url: extractionUrl });
 
-    // --- Gitingest Specific Extraction ---
-    if (isGitHubRepo) {
-      const gitingestContent = await page.evaluate(() => {
-        const resultTextArea = document.querySelector(".result-text") as HTMLTextAreaElement | null;
-        return resultTextArea ? resultTextArea.value : null;
-      });
-      if (gitingestContent && gitingestContent.trim().length > 0) {
-        ctx.log(
-          "info",
-          `Gitingest specific extraction successful (${gitingestContent.length} chars)`,
-        );
-        return {
-          url: originalUrl,
-          title: pageTitle,
-          textContent: gitingestContent.trim(),
-          error: null,
-        };
-      }
-      ctx.log("warn", "Gitingest specific extraction failed. Falling back to Readability.");
+    // Try GitHub-specific extraction first
+    const gitHubResult = await extractGitHubContent(
+      page,
+      isGitHubRepo,
+      originalUrl,
+      pageTitle,
+      ctx,
+    );
+    if (gitHubResult) {
+      return gitHubResult;
     }
 
-    // --- General Readability Extraction ---
-    const reader = new Readability(dom.window.document);
-    const article = reader.parse();
-    if (article?.textContent && article.textContent.trim().length > (article.title?.length || 0)) {
-      ctx.log("info", `Readability extracted content (${article.textContent.length} chars)`);
-      return {
-        url: originalUrl,
-        title: article.title || pageTitle,
-        textContent: article.textContent.trim(),
-        error: null,
-      };
+    // Try general Readability extraction
+    const generalResult = extractGeneralContent(dom, originalUrl, pageTitle, ctx);
+    if (generalResult) {
+      return generalResult;
     }
 
-    // --- Sophisticated Fallback Extraction ---
-    ctx.log("warn", "Readability failed. Attempting sophisticated fallback selectors...");
-    const fallbackResult = await page.evaluate(() => {
-      const selectors = [
-        "article",
-        "main",
-        '[role="main"]',
-        "#content",
-        ".content",
-        "#main",
-        ".main",
-        "#article-body",
-        ".article-body",
-        ".post-content",
-        ".entry-content",
-      ];
-
-      for (const selector of selectors) {
-        const element = document.querySelector(selector) as HTMLElement | null;
-        if (element?.innerText && element.innerText.trim().length > 100) {
-          console.error(`Fallback using selector: ${selector}`);
-          return { text: element.innerText.trim(), selector: selector };
-        }
-      }
-
-      // Advanced body text cleanup
-      const bodyClone = document.body.cloneNode(true) as HTMLElement;
-      const elementsToRemove = bodyClone.querySelectorAll(
-        'nav, header, footer, aside, script, style, noscript, button, form, [role="navigation"], [role="banner"], [role="contentinfo"], [aria-hidden="true"]',
-      );
-
-      for (const el of elementsToRemove) {
-        el.remove();
-      }
-
-      const bodyText = bodyClone.innerText.trim();
-      if (bodyText.length > 200) {
-        console.error("Fallback using filtered body text.");
-        return { text: bodyText, selector: "body (filtered)" };
-      }
-
-      return null;
-    });
-
+    // Try sophisticated fallback extraction
+    const fallbackResult = await extractFallbackContent(page, originalUrl, pageTitle, ctx);
     if (fallbackResult) {
-      ctx.log(
-        "info",
-        `Fallback extracted content (${fallbackResult.text.length} chars) using selector: ${fallbackResult.selector}`,
-      );
-      return {
-        url: originalUrl,
-        title: pageTitle,
-        textContent: fallbackResult.text,
-        error: null,
-      };
+      return fallbackResult;
     }
 
     return { url: originalUrl, error: "No meaningful content extracted" };
@@ -204,19 +334,7 @@ export async function fetchSinglePageContent(
       "error",
       `Error extracting content from ${extractionUrl}: ${error instanceof Error ? error.message : String(error)}`,
     );
-    let errorMessage = `Failed to extract content from ${extractionUrl}.`;
-    let errorReason = "Unknown error";
-    if (error instanceof Error) {
-      if (error.message.includes("timeout"))
-        errorReason = "Navigation or content loading timed out.";
-      else if (error.message.includes("net::") || error.message.includes("Failed to load"))
-        errorReason = "Could not resolve or load the URL.";
-      else if (error.message.includes("extract meaningful content"))
-        errorReason = "Readability and fallback selectors failed.";
-      else errorReason = error.message;
-    }
-    errorMessage += ` Reason: ${errorReason}`;
-    return { url: originalUrl, error: errorMessage };
+    return formatExtractionError(error, extractionUrl, originalUrl);
   }
 }
 

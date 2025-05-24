@@ -10,163 +10,209 @@ import { JSDOM } from "jsdom";
 import { CONFIG } from "../server/config.js";
 import type { PuppeteerContext } from "../types/index.js";
 
+// Helper functions for fetch content
+async function performHttpRequest(url: string, ctx: PuppeteerContext) {
+  ctx?.log?.("info", `Simple fetch starting for: ${url}`);
+
+  const response = await axios.get(url, {
+    timeout: 15000,
+    headers: {
+      "User-Agent": CONFIG.USER_AGENT,
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      Connection: "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
+    },
+    validateStatus: (status) => status >= 200 && status < 400, // Accept 2xx and 3xx
+  });
+
+  return response;
+}
+
+function validateContentType(contentType: string, ctx: PuppeteerContext): string | null {
+  if (
+    !contentType.includes("html") &&
+    !contentType.includes("text/plain") &&
+    !contentType.includes("text/")
+  ) {
+    const errorMsg = `Unsupported content type: ${contentType}`;
+    ctx?.log?.("warn", errorMsg);
+    return errorMsg;
+  }
+  return null;
+}
+
+function validateResponseData(data: unknown, ctx: PuppeteerContext): string | null {
+  if (typeof data !== "string") {
+    const errorMsg = "Response data is not a string";
+    ctx?.log?.("warn", errorMsg);
+    return errorMsg;
+  }
+  return null;
+}
+
+function extractHtmlContent(
+  dom: JSDOM,
+  ctx: PuppeteerContext,
+): { title: string | null; textContent: string } {
+  let title = dom.window.document.title || null;
+  let textContent = "";
+
+  // Try Readability first for better content extraction
+  try {
+    const reader = new Readability(dom.window.document);
+    const article = reader.parse();
+
+    if (article?.textContent && article.textContent.trim().length > 100) {
+      title = article.title || title;
+      textContent = article.textContent.trim();
+      ctx?.log?.("info", `Readability extraction successful (${textContent.length} chars)`);
+    } else {
+      // Fallback to body text extraction
+      textContent = dom.window.document.body?.textContent || "";
+      ctx?.log?.("info", "Readability failed, using body text extraction");
+    }
+  } catch (readabilityError) {
+    ctx?.log?.("warn", `Readability failed: ${readabilityError}, falling back to body text`);
+    textContent = dom.window.document.body?.textContent || "";
+  }
+
+  return { title, textContent };
+}
+
+function extractContent(
+  contentType: string,
+  responseData: string,
+  url: string,
+  ctx: PuppeteerContext,
+): { title: string | null; textContent: string } {
+  const dom = new JSDOM(responseData, { url });
+
+  if (contentType.includes("html")) {
+    return extractHtmlContent(dom, ctx);
+  }
+
+  // For non-HTML content, just get the text
+  return { title: dom.window.document.title || null, textContent: responseData };
+}
+
+function processTextContent(
+  textContent: string,
+  ctx: PuppeteerContext,
+): { processedContent: string | null; error?: string } {
+  // Clean up the text content
+  let processed = textContent.replace(/\s+/g, " ").trim();
+
+  if (processed.length > 15000) {
+    // Truncate if too long
+    processed = `${processed.substring(0, 15000)}... (content truncated)`;
+    ctx?.log?.("info", "Content truncated due to length");
+  }
+
+  if (processed.length < 50) {
+    const errorMsg = "Extracted content is too short to be meaningful";
+    ctx?.log?.("warn", errorMsg);
+    return { processedContent: null, error: errorMsg };
+  }
+
+  return { processedContent: processed };
+}
+
+function formatAxiosError(
+  axiosError: Error & { response?: { status?: number; statusText?: string }; code?: string },
+): string {
+  if (axiosError.response?.status) {
+    const status = axiosError.response.status;
+    if (status >= 400 && status < 500) {
+      return `Client error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+    }
+    if (status >= 500) {
+      return `Server error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+    }
+    return `HTTP error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
+  }
+
+  if (axiosError.code) {
+    // Network errors
+    switch (axiosError.code) {
+      case "ECONNABORTED":
+        return "Request timeout - server took too long to respond";
+      case "ENOTFOUND":
+        return "DNS resolution failed - domain not found";
+      case "ECONNREFUSED":
+        return "Connection refused - server is not accepting connections";
+      case "ECONNRESET":
+        return "Connection reset - network connection was interrupted";
+      case "ETIMEDOUT":
+        return "Connection timeout - failed to establish connection";
+      default:
+        return `Network error (${axiosError.code}): ${axiosError.message}`;
+    }
+  }
+
+  return `Request failed: ${axiosError.message}`;
+}
+
+function formatErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return `Unexpected error: ${String(error)}`;
+  }
+
+  const errorDetails = error.message;
+
+  if (error.name === "AxiosError" && "response" in error) {
+    const axiosError = error as Error & {
+      response?: { status?: number; statusText?: string };
+      code?: string;
+    };
+    return formatAxiosError(axiosError);
+  }
+
+  if (errorDetails.includes("timeout")) {
+    return "Request timeout - server took too long to respond";
+  }
+  if (errorDetails.includes("ENOTFOUND")) {
+    return "DNS resolution failed - domain not found";
+  }
+  if (errorDetails.includes("ECONNREFUSED")) {
+    return "Connection refused - server is not accepting connections";
+  }
+
+  return `Request failed: ${errorDetails}`;
+}
+
 export async function fetchSimpleContent(
   url: string,
   ctx: PuppeteerContext,
 ): Promise<{ title: string | null; textContent: string | null; error?: string }> {
   try {
-    ctx?.log?.("info", `Simple fetch starting for: ${url}`);
-
-    const response = await axios.get(url, {
-      timeout: 15000,
-      headers: {
-        "User-Agent": CONFIG.USER_AGENT,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        Connection: "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-      },
-      validateStatus: (status) => status >= 200 && status < 400, // Accept 2xx and 3xx
-    });
+    const response = await performHttpRequest(url, ctx);
 
     const contentType = response.headers["content-type"] || "";
     ctx?.log?.("info", `Content-Type: ${contentType}, Status: ${response.status}`);
 
-    if (
-      !contentType.includes("html") &&
-      !contentType.includes("text/plain") &&
-      !contentType.includes("text/")
-    ) {
-      // Check for supported content types
-      const errorMsg = `Unsupported content type: ${contentType}`;
-      ctx?.log?.("warn", errorMsg);
-      return {
-        title: null,
-        textContent: null,
-        error: errorMsg,
-      };
+    const contentTypeError = validateContentType(contentType, ctx);
+    if (contentTypeError) {
+      return { title: null, textContent: null, error: contentTypeError };
     }
 
-    if (typeof response.data !== "string") {
-      const errorMsg = "Response data is not a string";
-      ctx?.log?.("warn", errorMsg);
-      return {
-        title: null,
-        textContent: null,
-        error: errorMsg,
-      };
+    const dataError = validateResponseData(response.data, ctx);
+    if (dataError) {
+      return { title: null, textContent: null, error: dataError };
     }
 
-    // Create DOM for content extraction
-    const dom = new JSDOM(response.data, { url });
-    let title = dom.window.document.title || null;
-    let textContent = "";
+    const { title, textContent } = extractContent(contentType, response.data, url, ctx);
+    const { processedContent, error: processingError } = processTextContent(textContent, ctx);
 
-    if (contentType.includes("html")) {
-      // Try Readability first for better content extraction
-      try {
-        const reader = new Readability(dom.window.document);
-        const article = reader.parse();
-
-        if (article?.textContent && article.textContent.trim().length > 100) {
-          title = article.title || title;
-          textContent = article.textContent.trim();
-          ctx?.log?.("info", `Readability extraction successful (${textContent.length} chars)`);
-        } else {
-          // Fallback to body text extraction
-          textContent = dom.window.document.body?.textContent || "";
-          ctx?.log?.("info", "Readability failed, using body text extraction");
-        }
-      } catch (readabilityError) {
-        ctx?.log?.("warn", `Readability failed: ${readabilityError}, falling back to body text`);
-        textContent = dom.window.document.body?.textContent || "";
-      }
-    } else {
-      // For non-HTML content, just get the text
-      textContent = response.data;
+    if (processingError || !processedContent) {
+      return { title, textContent: null, error: processingError };
     }
 
-    // Clean up the text content
-    textContent = textContent.replace(/\s+/g, " ").trim();
-
-    if (textContent.length > 15000) {
-      // Truncate if too long
-      textContent = `${textContent.substring(0, 15000)}... (content truncated)`;
-      ctx?.log?.("info", "Content truncated due to length");
-    }
-
-    if (textContent.length < 50) {
-      const errorMsg = "Extracted content is too short to be meaningful";
-      ctx?.log?.("warn", errorMsg);
-      return {
-        title,
-        textContent: null,
-        error: errorMsg,
-      };
-    }
-
-    ctx?.log?.("info", `Simple fetch successful (${textContent.length} chars)`);
-    return { title, textContent };
+    ctx?.log?.("info", `Simple fetch successful (${processedContent.length} chars)`);
+    return { title, textContent: processedContent };
   } catch (error: unknown) {
-    let errorMsg = "Failed to fetch simple content";
-    let errorDetails = "";
-
-    if (error instanceof Error) {
-      errorDetails = error.message;
-
-      if (error.name === "AxiosError" && "response" in error) {
-        // Enhanced axios error handling
-        const axiosError = error as Error & {
-          response?: { status?: number; statusText?: string };
-          code?: string;
-        };
-        if (axiosError.response?.status) {
-          const status = axiosError.response.status;
-          if (status >= 400 && status < 500) {
-            errorMsg = `Client error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
-          } else if (status >= 500) {
-            errorMsg = `Server error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
-          } else {
-            errorMsg = `HTTP error (${status}): ${axiosError.response.statusText || "Unknown error"}`;
-          }
-        } else if (axiosError.code) {
-          // Network errors
-          switch (axiosError.code) {
-            case "ECONNABORTED":
-              errorMsg = "Request timeout - server took too long to respond";
-              break;
-            case "ENOTFOUND":
-              errorMsg = "DNS resolution failed - domain not found";
-              break;
-            case "ECONNREFUSED":
-              errorMsg = "Connection refused - server is not accepting connections";
-              break;
-            case "ECONNRESET":
-              errorMsg = "Connection reset - network connection was interrupted";
-              break;
-            case "ETIMEDOUT":
-              errorMsg = "Connection timeout - failed to establish connection";
-              break;
-            default:
-              errorMsg = `Network error (${axiosError.code}): ${errorDetails}`;
-          }
-        } else {
-          errorMsg = `Request failed: ${errorDetails}`;
-        }
-      } else if (errorDetails.includes("timeout")) {
-        errorMsg = "Request timeout - server took too long to respond";
-      } else if (errorDetails.includes("ENOTFOUND")) {
-        errorMsg = "DNS resolution failed - domain not found";
-      } else if (errorDetails.includes("ECONNREFUSED")) {
-        errorMsg = "Connection refused - server is not accepting connections";
-      } else {
-        errorMsg = `Request failed: ${errorDetails}`;
-      }
-    } else {
-      errorMsg = `Unexpected error: ${String(error)}`;
-    }
-
+    const errorMsg = formatErrorMessage(error);
     ctx?.log?.("error", `Simple fetch failed for ${url}: ${errorMsg}`);
     return { title: null, textContent: null, error: errorMsg };
   }
