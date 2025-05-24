@@ -9,7 +9,8 @@ const files = [
   path.join(path.dirname(new URL(import.meta.url).pathname), "../docs/refactor-guide-phase-1.md"),
 ];
 
-const date = execSync("date").toString().trim();
+// Security: Use full path to avoid PATH injection attacks
+const date = execSync("/bin/date").toString().trim();
 const lastUpdatedLine = `_Last updated: ${date}_`;
 
 for (const file of files) {
