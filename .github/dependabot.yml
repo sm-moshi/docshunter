@@ -15,8 +15,6 @@ updates:
   - "dependencies"
   - "actions"
   - "automated"
-  reviewers:
-  - "sm-moshi"
   allow:
   - dependency-type: "all"
 
@@ -29,5 +27,3 @@ updates:
   labels:
   - "actions"
   - "automated"
-  reviewers:
-  - "sm-moshi"
