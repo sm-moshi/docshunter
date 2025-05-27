@@ -13,6 +13,7 @@ updates:
       dependency-type: "production"
   labels:
   - "dependencies"
+  - "actions"
   - "automated"
   reviewers:
   - "sm-moshi"
