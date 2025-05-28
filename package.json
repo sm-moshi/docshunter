@@ -30,7 +30,7 @@
     "minimist": "1.2.8",
     "prune": "0.0.2",
     "puppeteer": "24.9.0",
-    "zod": "3.25.31"
+    "zod": "3.25.34"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
