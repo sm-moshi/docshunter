@@ -98,7 +98,8 @@ describe("URL and Data Helper Functions", () => {
       ];
 
       for (const { text, title, isValid } of testCases) {
-        const meetsMinLength = text.trim().length > (title?.length ?? 0) && text.trim().length > 100;
+        const meetsMinLength =
+          text.trim().length > (title?.length ?? 0) && text.trim().length > 100;
         expect(meetsMinLength).toBe(isValid);
       }
     });
