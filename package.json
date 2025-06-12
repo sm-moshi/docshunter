@@ -29,8 +29,8 @@
     "jsdom": "26.1.0",
     "minimist": "1.2.8",
     "prune": "0.0.2",
-    "puppeteer": "24.10.0",
-    "zod": "3.25.53"
+    "puppeteer": "24.10.1",
+    "zod": "3.25.63"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
