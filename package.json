@@ -19,17 +19,17 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.12.3",
+    "@modelcontextprotocol/sdk": "1.13.1",
     "@mozilla/readability": "0.6.0",
     "@types/axios": "0.9.36",
     "@types/jsdom": "21.1.7",
     "@types/mozilla__readability": "0.4.2",
     "axios": "1.10.0",
-    "better-sqlite3": "11.10.0",
+    "better-sqlite3": "12.0.0",
     "jsdom": "26.1.0",
     "minimist": "1.2.8",
     "prune": "0.0.2",
-    "puppeteer": "24.10.1",
+    "puppeteer": "24.10.2",
     "zod": "3.25.67"
   },
   "devDependencies": {
