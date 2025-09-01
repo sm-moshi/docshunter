@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   analyze:
-    name: SonarQube Analysis
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -44,9 +44,3 @@ jobs:
         with:
           name: coverage-report
           path: coverage/
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@1a6d90ebcb0e6a6b1d87e37ba693fe453195ae25
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
