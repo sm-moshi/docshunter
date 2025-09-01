@@ -21,8 +21,9 @@ chat_history.db
 
 # Lock file (User requested)
 package-lock.json
+# pnpm-lock.yaml
 
-# Local Dev
+# Local Dev (I don't use Cursor anymore, but some might do.)
 memory-bank/
 docs/zeugs/
 .repomix/
