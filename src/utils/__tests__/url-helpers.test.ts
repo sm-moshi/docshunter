@@ -139,7 +139,7 @@ describe("URL and Data Helper Functions", () => {
         expect(selector.length).toBeGreaterThan(0);
         expect(typeof selector).toBe("string");
         // Basic CSS selector format validation
-        expect(selector).toMatch(/^[a-zA-Z#.\[\]"=_-]+$/);
+        expect(selector).toMatch(/^[a-zA-Z#.[\]"=_-]+$/);
       }
     });
   });

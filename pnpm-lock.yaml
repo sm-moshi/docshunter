@@ -8,27 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@biomejs/cli-darwin-arm64':
-        specifier: ^2.2.2
-        version: 2.2.2
-      '@biomejs/monorepo':
-        specifier: github:biomejs/biome
-        version: https://codeload.github.com/biomejs/biome/tar.gz/3999330fc94605da8721231e1461352aee7fda79
       '@modelcontextprotocol/sdk':
         specifier: 1.17.4
         version: 1.17.4
       '@mozilla/readability':
         specifier: 0.6.0
         version: 0.6.0
-      '@types/axios':
-        specifier: 0.9.36
-        version: 0.9.36
-      '@types/jsdom':
-        specifier: 21.1.7
-        version: 21.1.7
-      '@types/mozilla__readability':
-        specifier: 0.4.2
-        version: 0.4.2
       axios:
         specifier: 1.11.0
         version: 1.11.0
@@ -41,9 +26,6 @@ importers:
       minimist:
         specifier: 1.2.8
         version: 1.2.8
-      prune:
-        specifier: 0.0.2
-        version: 0.0.2
       puppeteer:
         specifier: 24.18.0
         version: 24.18.0(typescript@5.9.2)
@@ -57,9 +39,15 @@ importers:
       '@types/better-sqlite3':
         specifier: 7.6.13
         version: 7.6.13
+      '@types/jsdom':
+        specifier: 21.1.7
+        version: 21.1.7
       '@types/minimist':
         specifier: 1.2.5
         version: 1.2.5
+      '@types/mozilla__readability':
+        specifier: 0.4.2
+        version: 0.4.2
       '@types/node':
         specifier: 22.18.0
         version: 22.18.0
@@ -159,11 +147,6 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
-
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/3999330fc94605da8721231e1461352aee7fda79':
-    resolution: {tarball: https://codeload.github.com/biomejs/biome/tar.gz/3999330fc94605da8721231e1461352aee7fda79}
-    version: 0.0.0
-    engines: {pnpm: 10.12.1}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -494,9 +477,6 @@ packages:
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
-
-  '@types/axios@0.9.36':
-    resolution: {integrity: sha512-NLOpedx9o+rxo/X5ChbdiX6mS1atE4WHmEEIcR9NLenRVa5HoVjAvjafwU3FPTqnZEstpoqCaW7fagqSoTDNeg==}
 
   '@types/better-sqlite3@7.6.13':
     resolution: {integrity: sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA==}
@@ -1156,9 +1136,6 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  lodash@4.17.21:
-    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
-
   loupe@3.2.1:
     resolution: {integrity: sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==}
 
@@ -1352,9 +1329,6 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
-  prune@0.0.2:
-    resolution: {integrity: sha512-5ZDNTaYgyOElBdXH5kRWFvyrAj2yHkuR32g9lBftm0SjC3xaq9tU30Ft6TOMHDrQJKGeTtMzPt+KKF85qOOJbg==}
-
   pump@3.0.3:
     resolution: {integrity: sha512-todwxLMY7/heScKmntwQG8CXVkWUOdYxIvY2s0VWAAMh/nd8SoYiRaKjlr7+iCs984f2P8zvrfWcDDYVb73NfA==}
 
@@ -1493,9 +1467,6 @@ packages:
   source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
-
-  sproutid@0.0.5:
-    resolution: {integrity: sha512-b4ToovLPYmdRzfvFhNS8DoHmv+TTW0AebcipzsrTcrHE8WMG3eGlDIJn584bXK95CbCktGQazNSA39Y9qgTDyA==}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -1846,7 +1817,8 @@ snapshots:
       '@biomejs/cli-win32-arm64': 2.2.2
       '@biomejs/cli-win32-x64': 2.2.2
 
-  '@biomejs/cli-darwin-arm64@2.2.2': {}
+  '@biomejs/cli-darwin-arm64@2.2.2':
+    optional: true
 
   '@biomejs/cli-darwin-x64@2.2.2':
     optional: true
@@ -1868,8 +1840,6 @@ snapshots:
 
   '@biomejs/cli-win32-x64@2.2.2':
     optional: true
-
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/3999330fc94605da8721231e1461352aee7fda79': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
@@ -2093,8 +2063,6 @@ snapshots:
     optional: true
 
   '@tootallnate/quickjs-emscripten@0.23.0': {}
-
-  '@types/axios@0.9.36': {}
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
@@ -2820,8 +2788,6 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  lodash@4.17.21: {}
-
   loupe@3.2.1: {}
 
   lru-cache@10.4.3: {}
@@ -3002,11 +2968,6 @@ snapshots:
       - supports-color
 
   proxy-from-env@1.1.0: {}
-
-  prune@0.0.2:
-    dependencies:
-      lodash: 4.17.21
-      sproutid: 0.0.5
 
   pump@3.0.3:
     dependencies:
@@ -3215,10 +3176,6 @@ snapshots:
 
   source-map@0.6.1:
     optional: true
-
-  sproutid@0.0.5:
-    dependencies:
-      lodash: 4.17.21
 
   stackback@0.0.2: {}
 
