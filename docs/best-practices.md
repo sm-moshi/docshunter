@@ -595,4 +595,4 @@ server.tool('search_documentation', {
 - Prefer modular, capability-driven server/client design.
 
 ---
-_Last updated: Sat May 24 05:25:13 CEST 2025_
+_Last updated: Mon Sep 15 02:17:39 CEST 2025_

@@ -97,7 +97,12 @@ async function performInitialNavigation(page: Page): Promise<void> {
 }
 
 async function validatePageState(page: Page): Promise<void> {
-  if (page.isClosed() ?? page.mainFrame().isDetached()) {
+  // Check if page is usable by attempting a tiny evaluation on the page.
+  // This avoids calling deprecated sync APIs like `isClosed()` or frame
+  // methods that may be removed in newer puppeteer releases.
+  try {
+    await page.evaluate(() => true);
+  } catch (_err) {
     logError("Page closed or frame detached immediately after navigation attempt.");
     throw new Error("Frame detached during navigation");
   }
@@ -111,8 +116,13 @@ async function waitForAndValidateSearchInput(ctx: PuppeteerContext): Promise<voi
   const searchInput = await waitForSearchInput(ctx);
   if (!searchInput) {
     logError("Search input not found after navigation, taking screenshot for debugging");
-    if (!page.isClosed()) {
+    try {
+      // Try a small evaluation to ensure the page is still responsive before
+      // attempting a screenshot. This avoids deprecated `isClosed()`.
+      await page.evaluate(() => true);
       await page.screenshot({ path: "debug_no_search_input.png", fullPage: true });
+    } catch (screenshotErr) {
+      logWarn(`Could not take screenshot: ${screenshotErr}`);
     }
     throw new Error(
       "Search input not found after navigation - page might not have loaded correctly",
@@ -127,10 +137,11 @@ async function validateFinalPageState(page: Page): Promise<void> {
   let pageUrl = "N/A";
 
   try {
-    if (!page.isClosed()) {
-      pageTitle = await page.title();
-      pageUrl = page.url();
-    }
+    // Avoid deprecated `isClosed()` call by probing the page. If the
+    // evaluation fails the page is not usable.
+    await page.evaluate(() => true);
+    pageTitle = await page.title();
+    pageUrl = page.url();
   } catch (titleError) {
     logWarn(`Could not retrieve page title/URL after navigation: ${titleError}`);
   }
@@ -257,6 +268,21 @@ export async function setupBrowserEvasion(ctx: PuppeteerContext) {
   });
 }
 
+/**
+ * Check whether a Page is usable (not closed/detached) without calling deprecated sync APIs.
+ * We probe the page with a tiny evaluation which will fail if the page/frame is invalid.
+ */
+async function isPageUsable(page?: Page | null): Promise<boolean> {
+  if (!page) return false;
+  try {
+    // A no-op evaluation to surface any detached/closed state as an exception.
+    await page.evaluate(() => true);
+    return true;
+  } catch (_err) {
+    return false;
+  }
+}
+
 export async function waitForSearchInput(
   ctx: PuppeteerContext,
   timeout = CONFIG.SELECTOR_TIMEOUT,
@@ -267,7 +293,7 @@ export async function waitForSearchInput(
   for (const selector of possibleSelectors) {
     try {
       const element = await page.waitForSelector(selector, {
-        timeout: 5000,
+        timeout,
         visible: true,
       });
       if (element) {
@@ -281,7 +307,7 @@ export async function waitForSearchInput(
           return selector;
         }
       }
-    } catch (error) {
+    } catch (_err) {
       logWarn(`Selector '${selector}' not found or not interactive`);
     }
   }
@@ -302,7 +328,7 @@ export async function checkForCaptcha(ctx: PuppeteerContext): Promise<boolean> {
 // Helper functions for recovery procedure
 async function performPageRefresh(ctx: PuppeteerContext): Promise<void> {
   logInfo("Attempting page refresh (Recovery Level 1)");
-  if (ctx.page && !ctx.page?.isClosed()) {
+  if (ctx.page) {
     try {
       await ctx.page.reload({ timeout: CONFIG.TIMEOUT_PROFILES.navigation });
     } catch (reloadError) {
@@ -320,7 +346,8 @@ async function performNewPageCreation(ctx: PuppeteerContext): Promise<number> {
 
   if (ctx.page) {
     try {
-      if (!ctx.page?.isClosed()) await ctx.page.close();
+      // Attempt to close regardless; ignore errors if the page is already closed.
+      await ctx.page.close();
     } catch (closeError) {
       logWarn(
         `Ignoring error closing old page: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
@@ -329,7 +356,10 @@ async function performNewPageCreation(ctx: PuppeteerContext): Promise<number> {
     ctx.setPage(null);
   }
 
-  if (!ctx.browser?.isConnected()) {
+  // If there's no browser instance available, escalate to full restart.
+  // Avoid calling the deprecated `isConnected()` API; rely on the presence
+  // of the browser object and handle connection errors while creating a page.
+  if (!ctx.browser) {
     logWarn(
       "Browser was null or disconnected, cannot create new page. Escalating to full restart.",
     );
@@ -356,7 +386,8 @@ async function cleanupPage(ctx: PuppeteerContext): Promise<void> {
   if (!ctx.page) return;
 
   try {
-    if (!ctx.page.isClosed()) await ctx.page.close();
+    // Try closing the page; don't rely on deprecated `isClosed()`.
+    await ctx.page.close();
   } catch (closeError) {
     logWarn(
       `Ignoring error closing page during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
@@ -368,7 +399,10 @@ async function cleanupBrowser(ctx: PuppeteerContext): Promise<void> {
   if (!ctx.browser) return;
 
   try {
-    if (ctx.browser.isConnected()) await ctx.browser.close();
+    // Close the browser if possible. Don't call the deprecated `isConnected()`
+    // method; just attempt to close and ignore errors if the browser is already
+    // disconnected or closing fails.
+    await ctx.browser.close();
   } catch (closeError) {
     logWarn(
       `Ignoring error closing browser during full restart: ${closeError instanceof Error ? closeError.message : String(closeError)}`,
@@ -394,14 +428,18 @@ async function performFullBrowserRestart(ctx: PuppeteerContext): Promise<void> {
 export async function recoveryProcedure(ctx: PuppeteerContext, error?: Error): Promise<void> {
   // Create recovery context for analysis
   const recoveryContext: RecoveryContext = {
-    hasValidPage: !!(ctx.page && !ctx.page.isClosed() && !ctx.page.mainFrame()?.isDetached()),
+    hasValidPage: await isPageUsable(ctx.page),
     hasBrowser: !!ctx.browser,
-    isBrowserConnected: !!ctx.browser?.isConnected(),
+    // The precise connected state API is deprecated; use the presence of the
+    // browser object as an indicator and handle connection problems at
+    // operation time.
+    isBrowserConnected: !!ctx.browser,
     operationCount: ctx.operationCount,
   };
 
   let recoveryLevel = determineRecoveryLevel(error, recoveryContext);
-  const opId = ctx.incrementOperationCount();
+  // increment operation count for monitoring; value not needed here
+  ctx.incrementOperationCount();
 
   logInfo("Starting recovery procedure");
 
@@ -458,7 +496,7 @@ async function handleDetachedFrameError(ctx: PuppeteerContext, error: Error): Pr
 }
 
 async function handleCaptchaDetection(ctx: PuppeteerContext): Promise<boolean> {
-  if (!ctx.page || ctx.page?.isClosed() || ctx.page.mainFrame().isDetached()) {
+  if (!(await isPageUsable(ctx.page))) {
     logWarn("Skipping CAPTCHA check as page is invalid.");
     return false;
   }

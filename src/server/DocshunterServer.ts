@@ -4,6 +4,9 @@
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+// Import modular tool implementations
+import chatPerplexity from "../tools/chatPerplexity.js";
+import extractUrlContent from "../tools/extractUrlContent.js";
 import type {
   IBrowserManager,
   IDatabaseManager,
@@ -15,10 +18,6 @@ import { BrowserManager } from "./modules/BrowserManager.js";
 import { DatabaseManager } from "./modules/DatabaseManager.js";
 import { SearchEngine } from "./modules/SearchEngine.js";
 import { createToolHandlersRegistry, setupToolHandlers } from "./toolHandlerSetup.js";
-
-// Import modular tool implementations
-import chatPerplexity from "../tools/chatPerplexity.js";
-import extractUrlContent from "../tools/extractUrlContent.js";
 
 export class DocshunterServer {
   private readonly server: Server;

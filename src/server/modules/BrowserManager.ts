@@ -153,7 +153,7 @@ export class BrowserManager implements IBrowserManager {
         await this.page.close();
       }
 
-      if (this.browser?.isConnected()) {
+      if (this.browser && !this.browser.process()?.killed) {
         await this.browser.close();
       }
 

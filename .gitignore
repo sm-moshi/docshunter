@@ -24,10 +24,8 @@ package-lock.json
 # pnpm-lock.yaml
 
 # Local Dev (I don't use Cursor anymore, but some might do.)
-memory-bank/
 docs/zeugs/
 .repomix/
-.cursor/
 
 # Coverage
 node_modules/
@@ -43,3 +41,6 @@ coverage/server/
 coverage/schema/
 !coverage/lcov.info
 coverage/coverage-final.json
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*

@@ -33,6 +33,7 @@ vi.mock("../../../utils/logging.js", () => ({
 
 // Import the mocked logging functions
 import * as logging from "../../../utils/logging.js";
+
 const mockLogInfo = vi.mocked(logging.logInfo);
 const mockLogWarn = vi.mocked(logging.logWarn);
 const mockLogError = vi.mocked(logging.logError);

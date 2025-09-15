@@ -99,7 +99,7 @@ export class SearchEngine implements ISearchEngine {
         logInfo(`Found response with selector: ${proseSelector}`);
         selectorFound = true;
         break;
-      } catch (selectorError) {
+      } catch {
         logWarn(`Selector ${proseSelector} not found, trying next...`);
       }
     }

@@ -6,34 +6,33 @@
 // ─── BROWSER & PUPPETEER TYPES ────────────────────────────────────────
 export type {
   BrowserConfig,
-  RecoveryContext,
   ErrorAnalysis,
-  PuppeteerContext,
   IBrowserManager,
   PageContentResult,
+  PuppeteerContext,
+  RecoveryContext,
   RecursiveFetchResult,
 } from "./browser.js";
-
+// ─── CONFIG TYPES ─────────────────────────────────────────────────────
+export type { AppConfig, TimeoutProfiles } from "./config.js";
 // ─── DATABASE & CHAT TYPES ────────────────────────────────────────────
 export type {
   ChatMessage,
   ChatResult,
   IDatabaseManager,
 } from "./database.js";
-
-// ─── TOOL & SEARCH TYPES ──────────────────────────────────────────────
-export type {
-  ISearchEngine,
-  ToolHandler,
-  ToolHandlersRegistry,
-  ChatPerplexityArgs,
-  ExtractUrlContentArgs,
-  GetDocumentationArgs,
-  FindApisArgs,
-  CheckDeprecatedCodeArgs,
-  SearchArgs,
-  ToolArgs,
-} from "./tools.js";
-
 // ─── SERVER TYPES ─────────────────────────────────────────────────────
 export type { ServerDependencies } from "./server.js";
+// ─── TOOL & SEARCH TYPES ──────────────────────────────────────────────
+export type {
+  ChatPerplexityArgs,
+  CheckDeprecatedCodeArgs,
+  ExtractUrlContentArgs,
+  FindApisArgs,
+  GetDocumentationArgs,
+  ISearchEngine,
+  SearchArgs,
+  ToolArgs,
+  ToolHandler,
+  ToolHandlersRegistry,
+} from "./tools.js";

@@ -132,8 +132,10 @@ async function extractGitHubContent(
   if (!isGitHubRepo) return null;
 
   const gitingestContent = await page.evaluate(() => {
-    const resultTextArea = document.querySelector(".result-text") as HTMLTextAreaElement | null;
-    return resultTextArea ? resultTextArea.value : null;
+    const resultTextArea = document.querySelector(".result-text");
+    return resultTextArea && resultTextArea instanceof HTMLTextAreaElement
+      ? resultTextArea.value
+      : null;
   });
 
   if (gitingestContent && gitingestContent.trim().length > 0) {
@@ -387,7 +389,11 @@ export async function extractSameDomainLinks(
     resolvedLinks.sort((a, b) => b.text.length - a.text.length);
     return resolvedLinks.slice(0, 10);
   } catch (error) {
-    // On error, return empty array
+    // Log the error for debugging purposes before returning empty array
+    console.error(
+      "Error extracting same-domain links:",
+      error instanceof Error ? error.message : String(error),
+    );
     return [];
   }
 }
