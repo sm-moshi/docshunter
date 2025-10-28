@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@biomejs/cli-darwin-arm64':
-        specifier: ^2.3.1
-        version: 2.3.1
+        specifier: ^2.3.2
+        version: 2.3.2
       '@biomejs/monorepo':
         specifier: github:biomejs/biome
-        version: https://codeload.github.com/biomejs/biome/tar.gz/d0dcc7e3d70d6988b49f4cdb33972e069915fd38
+        version: https://codeload.github.com/biomejs/biome/tar.gz/6d95a67d7ae839a266a1e50e68559cf131243003
       '@modelcontextprotocol/sdk':
         specifier: 1.20.2
         version: 1.20.2
@@ -30,8 +30,8 @@ importers:
         specifier: 0.4.2
         version: 0.4.2
       axios:
-        specifier: 1.13.0
-        version: 1.13.0
+        specifier: 1.13.1
+        version: 1.13.1
       better-sqlite3:
         specifier: 12.4.1
         version: 12.4.1
@@ -652,8 +652,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@biomejs/cli-darwin-arm64@2.3.1':
-    resolution: {integrity: sha512-ombSf3MnTUueiYGN1SeI9tBCsDUhpWzOwS63Dove42osNh0PfE1cUtHFx6eZ1+MYCCLwXzlFlYFdrJ+U7h6LcA==}
+  '@biomejs/cli-darwin-arm64@2.3.2':
+    resolution: {integrity: sha512-4LECm4kc3If0JISai4c3KWQzukoUdpxy4fRzlrPcrdMSRFksR9ZoXK7JBcPuLBmd2SoT4/d7CQS33VnZpgBjew==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [darwin]
@@ -700,8 +700,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/d0dcc7e3d70d6988b49f4cdb33972e069915fd38':
-    resolution: {tarball: https://codeload.github.com/biomejs/biome/tar.gz/d0dcc7e3d70d6988b49f4cdb33972e069915fd38}
+  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/6d95a67d7ae839a266a1e50e68559cf131243003':
+    resolution: {tarball: https://codeload.github.com/biomejs/biome/tar.gz/6d95a67d7ae839a266a1e50e68559cf131243003}
     version: 0.0.0
     engines: {pnpm: 10.19.0}
 
@@ -1318,8 +1318,8 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
-  axios@1.13.0:
-    resolution: {integrity: sha512-zt40Pz4zcRXra9CVV31KeyofwiNvAbJ5B6YPz9pMJ+yOSLikvPT4Yi5LjfgjRa9CawVYBaD1JQzIVcIvBejKeA==}
+  axios@1.13.1:
+    resolution: {integrity: sha512-hU4EGxxt+j7TQijx1oYdAjw4xuIp1wRQSsbMFwSthCWeBQur1eF+qJ5iQ5sN3Tw8YRzQNKb8jszgBdMDVqwJcw==}
 
   b4a@1.7.3:
     resolution: {integrity: sha512-5Q2mfq2WfGuFp3uS//0s6baOJLMoVduPYVeNmDYxu5OUA1/cBfvr2RIS7vi62LdNj/urk1hfmj867I3qt6uZ7Q==}
@@ -1667,8 +1667,8 @@ packages:
     engines: {node: '>=0.10.0'}
     hasBin: true
 
-  electron-to-chromium@1.5.240:
-    resolution: {integrity: sha512-OBwbZjWgrCOH+g6uJsA2/7Twpas2OlepS9uvByJjR2datRDuKGYeD+nP8lBBks2qnB7bGJNHDUx7c/YLaT3QMQ==}
+  electron-to-chromium@1.5.241:
+    resolution: {integrity: sha512-ILMvKX/ZV5WIJzzdtuHg8xquk2y0BOGlFOxBVwTpbiXqWIH0hamG45ddU4R3PQ0gYu+xgo0vdHXHli9sHIGb4w==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -3771,7 +3771,7 @@ snapshots:
   '@biomejs/cli-darwin-arm64@2.2.4':
     optional: true
 
-  '@biomejs/cli-darwin-arm64@2.3.1': {}
+  '@biomejs/cli-darwin-arm64@2.3.2': {}
 
   '@biomejs/cli-darwin-x64@2.2.4':
     optional: true
@@ -3794,7 +3794,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.2.4':
     optional: true
 
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/d0dcc7e3d70d6988b49f4cdb33972e069915fd38': {}
+  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/6d95a67d7ae839a266a1e50e68559cf131243003': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
@@ -4212,7 +4212,7 @@ snapshots:
 
   '@types/axios@0.14.4':
     dependencies:
-      axios: 1.13.0
+      axios: 1.13.1
     transitivePeerDependencies:
       - debug
 
@@ -4394,7 +4394,7 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  axios@1.13.0:
+  axios@1.13.1:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.4
@@ -4540,7 +4540,7 @@ snapshots:
     dependencies:
       baseline-browser-mapping: 2.8.20
       caniuse-lite: 1.0.30001751
-      electron-to-chromium: 1.5.240
+      electron-to-chromium: 1.5.241
       node-releases: 2.0.26
       update-browserslist-db: 1.1.4(browserslist@4.27.0)
 
@@ -4750,7 +4750,7 @@ snapshots:
     dependencies:
       jake: 10.9.4
 
-  electron-to-chromium@1.5.240: {}
+  electron-to-chromium@1.5.241: {}
 
   emoji-regex@8.0.0: {}
 
@@ -5375,7 +5375,7 @@ snapshots:
       '@yarnpkg/lockfile': 1.1.0
       '@yarnpkg/parsers': 3.0.2
       '@zkochan/js-yaml': 0.0.7
-      axios: 1.13.0
+      axios: 1.13.1
       chalk: 4.1.2
       cli-cursor: 3.1.0
       cli-spinners: 2.6.1
