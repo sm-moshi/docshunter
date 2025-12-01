@@ -13,7 +13,7 @@ importers:
         version: 2.3.5
       '@biomejs/monorepo':
         specifier: github:biomejs/biome
-        version: https://codeload.github.com/biomejs/biome/tar.gz/5fc5416ae1a64dfae977241eb3f30601999039b7
+        version: https://codeload.github.com/biomejs/biome/tar.gz/153e3c6ba999481c8dff2531bcbbd62f4977cd19
       '@modelcontextprotocol/sdk':
         specifier: 1.22.0
         version: 1.22.0
@@ -699,8 +699,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/5fc5416ae1a64dfae977241eb3f30601999039b7':
-    resolution: {tarball: https://codeload.github.com/biomejs/biome/tar.gz/5fc5416ae1a64dfae977241eb3f30601999039b7}
+  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/153e3c6ba999481c8dff2531bcbbd62f4977cd19':
+    resolution: {tarball: https://codeload.github.com/biomejs/biome/tar.gz/153e3c6ba999481c8dff2531bcbbd62f4977cd19}
     version: 0.0.0
     engines: {pnpm: 10.19.0}
 
@@ -3668,7 +3668,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.4':
     optional: true
 
-  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/5fc5416ae1a64dfae977241eb3f30601999039b7': {}
+  '@biomejs/monorepo@https://codeload.github.com/biomejs/biome/tar.gz/153e3c6ba999481c8dff2531bcbbd62f4977cd19': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
