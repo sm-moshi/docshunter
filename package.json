@@ -39,7 +39,7 @@
   "dependencies": {
     "@biomejs/cli-darwin-arm64": "^2.3.5",
     "@biomejs/monorepo": "github:biomejs/biome",
-    "@modelcontextprotocol/sdk": "1.22.0",
+    "@modelcontextprotocol/sdk": "1.24.0",
     "@mozilla/readability": "0.6.0",
     "@types/axios": "0.14.4",
     "@types/jsdom": "27.0.0",
