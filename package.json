@@ -48,7 +48,7 @@
     "better-sqlite3": "12.5.0",
     "jsdom": "27.3.0",
     "minimist": "1.2.8",
-    "puppeteer": "24.33.1",
+    "puppeteer": "24.34.0",
     "zod": "4.2.1"
   },
   "devDependencies": {
